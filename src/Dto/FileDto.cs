@@ -11,6 +11,6 @@ namespace Buffalo.Dto
 		public string? UploadedBy { get; set; }
 		public AccessModes AccessType { get; set; }
 		public DateTime CreatedOn { get; set; }
-		public string? PublicUri { get; set; }
+		public string? ResourceUri { get; set; }
 	}
 }

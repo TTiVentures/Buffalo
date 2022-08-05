@@ -48,14 +48,13 @@ namespace Buffalo.Implementations
 
 				using var client = new AmazonS3Client(credentials, config);
 
-				var documentName = Guid.NewGuid();
 
-				var publicUri = $"https://{bucketName}.s3.amazonaws.com/{documentName}";
+				var publicUri = $"https://{bucketName}.s3.amazonaws.com/{fileNameForStorage}";
 
 				var uploadRequest = new TransferUtilityUploadRequest
 				{
 					InputStream = imageFile.OpenReadStream(),
-					Key = documentName.ToString(),
+					Key = fileNameForStorage,
 					ContentType = imageFile.ContentType,
 					BucketName = bucketName,
 					CannedACL = (accessMode == AccessModes.PUBLIC) ? S3CannedACL.PublicRead : S3CannedACL.Private

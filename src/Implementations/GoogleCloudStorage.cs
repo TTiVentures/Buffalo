@@ -42,7 +42,8 @@ namespace Buffalo.Implementations
 					{
 						PredefinedAcl = (accessMode == AccessModes.PUBLIC) ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
 					});
-				return dataObject.MediaLink;
+
+				return "https://storage.cloud.google.com/" + dataObject.Bucket + "/" + dataObject.Name;
 			}
 		}
 
@@ -59,8 +60,8 @@ namespace Buffalo.Implementations
 		public async Task<Stream> RetrieveFileAsync(Guid id)
 
 		{
-			using (var memoryStream = new MemoryStream())
-			{
+			var memoryStream = new MemoryStream();
+			
 				// IDownloadProgress defined in Google.Apis.Download namespace
 				var progress = new Progress<IDownloadProgress>(
 					p => Console.WriteLine($"bytes: {p.BytesDownloaded}, status: {p.Status}")
@@ -69,9 +70,11 @@ namespace Buffalo.Implementations
 				// Download source object from bucket to local file system
 				storageClient.DownloadObject(bucketName, id.ToString(), memoryStream, null, progress);
 
+				memoryStream.Position = 0;
+
 				return memoryStream;
 
-			}
+			
 
 		}
 

@@ -2,15 +2,26 @@ using Buffalo;
 using Buffalo.Implementations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(opts =>
+{
+    var enumConverter = new JsonStringEnumConverter();
+    opts.JsonSerializerOptions.Converters.Add(enumConverter);
+});
 
-builder.Services.AddSingleton<IStorage, GoogleCloudStorage>();
 
+
+builder.Services.AddSingleton<IStorage, AmazonS3>();
+
+//builder.Services.AddSingleton<IStorage, GoogleCloudStorage>();
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services.AddAuthentication("Bearer")
             .AddJwtBearer("Bearer", options =>
@@ -19,7 +30,9 @@ builder.Services.AddAuthentication("Bearer")
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateAudience = false
+                    ValidateAudience = false,
+                    NameClaimType = "sub",
+                    RoleClaimType = "role",
                 };
             });
 

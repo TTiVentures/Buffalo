@@ -13,7 +13,7 @@ namespace Buffalo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [AllowAnonymous]
+    //[AllowAnonymous]
     public class FileController : ControllerBase
     {
         private IStorage _cloudStorage;
@@ -42,9 +42,25 @@ namespace Buffalo.Controllers
 				//throw new HttpResponseException(404, "File not exists.");
 			}
 
-			var file = await _cloudStorage.RetrieveFileAsync(id);
+			try {
 
-			return File(file, storedFile.ContentType ?? "application/octet-stream", storedFile.FileName);
+				if (storedFile.AccessType == AccessModes.PROTECTED && User.Identity != null)
+                {
+					if (storedFile.UploadedBy != User.Identity.Name)
+                    {
+						return Unauthorized("Unauthorized access to PROTECTED resource");
+                    }
+                }
+
+				var file = await _cloudStorage.RetrieveFileAsync(id);
+
+				return File(file, storedFile.ContentType ?? "application/octet-stream", storedFile.FileName);
+
+			}
+            catch (Exception ex)
+            {
+				return NotFound(ex.Message);
+            }
 
 
 		}
@@ -53,7 +69,6 @@ namespace Buffalo.Controllers
         [HttpPost, DisableRequestSizeLimit]
 		public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromForm, Required] AccessModes accessMode = AccessModes.PRIVATE)
 		{
-
 			try
 			{ 
 				Console.WriteLine($"New picture request -> {file.FileName}");
@@ -66,7 +81,7 @@ namespace Buffalo.Controllers
 
 					string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName);
 
-					Buffalo.Models.File fileRecord = new()
+					Models.File fileRecord = new()
 					{
 						CreatedOn = DateTime.UtcNow,
 						FileId = fileId,
@@ -87,7 +102,8 @@ namespace Buffalo.Controllers
 						CreatedOn = DateTime.UtcNow,
 						FileId = fileId,
 						FileName = file.FileName,
-						UploadedBy = User.Identity.Name
+						UploadedBy = User.Identity.Name,
+						ResourceUri = imageUrl,
 
 					});
 				}
@@ -100,16 +116,17 @@ namespace Buffalo.Controllers
 			{
 				return StatusCode(500, $"Internal server error: {ex}");
 			}
-			}
+		}
+
 
         // DELETE api/<FileController>/5
         [HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAsync(Guid id)
 		{
 			
-			var getdocument = _fileContext.Files.Find(id);
+			var storedFile = _fileContext.Files.Find(id);
 
-			if (getdocument == null)
+			if (storedFile == null)
 			{
 				return NotFound("File not exists.");
 				//throw new HttpResponseException(404, "File not exists.");
@@ -117,7 +134,15 @@ namespace Buffalo.Controllers
 			else
 			{
 
-				_fileContext.Files.Remove(getdocument);
+				if (storedFile.AccessType == AccessModes.PROTECTED && User.Identity != null)
+				{
+					if (storedFile.UploadedBy != User.Identity.Name)
+					{
+						return Unauthorized("Unauthorized access to PROTECTED resource");
+					}
+				}
+
+					_fileContext.Files.Remove(storedFile);
 
 				try
 				{
