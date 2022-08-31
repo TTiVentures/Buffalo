@@ -3,12 +3,14 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Buffalo.Models;
+using Buffalo.Options;
 using Buffalo.Utils;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -19,28 +21,23 @@ namespace Buffalo.Implementations
 {
 	public class AmazonS3 : IStorage
 	{
-		private string FolderName { get; }
-		private string BucketName { get; }
-		private string AccessKey { get; }
-		private string SecretKey { get; }
 
-		public AmazonS3(IConfiguration configuration)
+		private readonly S3Options _options;
+
+		public AmazonS3(IOptions<S3Options> options)
 		{
-			FolderName = configuration.GetValue<string>("AwsSettings:FolderName");
-			BucketName = configuration.GetValue<string>("AwsSettings:BucketName");
-			AccessKey = configuration.GetValue<string>("AwsSettings:AccessKey");
-			SecretKey = configuration.GetValue<string>("AwsSettings:SecretKey");
+			_options = options.Value;
 		}
 
 		public async Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode)
 		{
 			try
 			{
-				var bucketName = !string.IsNullOrWhiteSpace(FolderName)
-					? BucketName + @"/" + FolderName
-					: BucketName;
+				var bucketName = !string.IsNullOrWhiteSpace(_options.FolderName)
+					? _options.BucketName + @"/" + _options.FolderName
+					: _options.BucketName;
 
-				var credentials = new BasicAWSCredentials(AccessKey, SecretKey);
+				var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
 				var config = new AmazonS3Config
 				{
 					RegionEndpoint = Amazon.RegionEndpoint.EUWest3
@@ -89,7 +86,7 @@ namespace Buffalo.Implementations
 			try
 			{
 
-				var credentials = new BasicAWSCredentials(AccessKey, SecretKey);
+				var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
 				var config = new AmazonS3Config
 				{
 					RegionEndpoint = Amazon.RegionEndpoint.EUWest3
@@ -98,7 +95,7 @@ namespace Buffalo.Implementations
 				var fileTransferUtility = new TransferUtility(client);
 				await fileTransferUtility.S3Client.DeleteObjectAsync(new DeleteObjectRequest()
 				{
-					BucketName = BucketName,
+					BucketName = _options.BucketName,
 					Key = fileNameForStorage
 				});
 			}
@@ -128,7 +125,7 @@ namespace Buffalo.Implementations
 		{
 			try
 			{
-				var credentials = new BasicAWSCredentials(AccessKey, SecretKey);
+				var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
 				var config = new AmazonS3Config
 				{
 					RegionEndpoint = Amazon.RegionEndpoint.EUWest3
@@ -138,7 +135,7 @@ namespace Buffalo.Implementations
 
 				var objectResponse = await fileTransferUtility.S3Client.GetObjectAsync(new GetObjectRequest()
 				{
-					BucketName = BucketName,
+					BucketName = _options.BucketName,
 					Key = id.ToString()
 				});
 

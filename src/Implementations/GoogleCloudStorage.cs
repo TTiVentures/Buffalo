@@ -1,15 +1,12 @@
 ﻿using Buffalo.Models;
+using Buffalo.Options;
 using Buffalo.Utils;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace Buffalo.Implementations
 {
@@ -19,16 +16,12 @@ namespace Buffalo.Implementations
 		private readonly StorageClient storageClient;
 		private readonly string bucketName;
 
-		public GoogleCloudStorage(IConfiguration configuration)
+		public GoogleCloudStorage(IOptions<GCSOptions> options)
 		{
-			Dictionary<string, object> settings = configuration
-			  .GetSection("GoogleCredentialFile")
-			  .Get<Dictionary<string, object>>();
-			string json = JsonConvert.SerializeObject(settings);
 
-			googleCredential = GoogleCredential.FromJson(json);
+			googleCredential = GoogleCredential.FromJson(options.Value.JsonCredentialsFile);
 			storageClient = StorageClient.Create(googleCredential);
-			bucketName = configuration.GetValue<string>("GoogleCloudStorageBucket");
+			bucketName = options.Value.StorageBucket;
 		}
 
 		public async Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode)
