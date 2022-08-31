@@ -37,21 +37,24 @@ string json = JsonConvert.SerializeObject(settings);
 
 builder.Services.AddBuffalo(x =>
 {
-    /*
+    
     x.UseAmazonS3(y =>
     {
         y.AccessKey = amazonOptions.AccessKey;
         y.SecretKey = amazonOptions.SecretKey;
         y.BucketName = amazonOptions.BucketName;
         y.FolderName = amazonOptions.FolderName;
+        y.RegionEndpoint = amazonOptions.RegionEndpoint;
     });
-    */
+    
 
+    /*
     x.UseCloudStorage(z =>
     {
         z.JsonCredentialsFile = json;
         z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
     });
+    */
 
 });
 

@@ -10,6 +10,8 @@ namespace Buffalo.Options
         public string? SecretKey { get; set; }
         [Required]
         public string? BucketName { get; set; }
+        [Required]
+        public string? RegionEndpoint { get; set; }
         public string? FolderName { get; set; }
     }
 }

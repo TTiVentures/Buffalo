@@ -12,9 +12,7 @@ namespace Buffalo.Extensions.DependencyInjection
         public static IServiceCollection AddBuffalo(
             this IServiceCollection services, Action<IBuffaloBuilder> builderAction = null)
         {
-
-            // Register lib services here...
-            // services.AddScoped<ILibraryService, DefaultLibraryService>();;
+            services.AddScoped<FileManager>();
 
             var options = new BuffaloBuilder(services);
 
@@ -30,7 +28,7 @@ namespace Buffalo.Extensions.DependencyInjection
                 .Configure(options)
                 .ValidateDataAnnotations();
 
-            me.Services.AddSingleton<IStorage, AmazonS3>();
+            me.Services.AddScoped<IStorage, AmazonS3>();
 
             return me;
         }
@@ -41,7 +39,7 @@ namespace Buffalo.Extensions.DependencyInjection
                 .Configure(options)
                 .ValidateDataAnnotations();
 
-            me.Services.AddSingleton<IStorage, GoogleCloudStorage>();
+            me.Services.AddScoped<IStorage, GoogleCloudStorage>();
 
             return me;
         }

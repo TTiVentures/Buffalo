@@ -16,15 +16,12 @@ namespace Buffalo.Controllers
     //[AllowAnonymous]
     public class FileController : ControllerBase
     {
-        private IStorage _cloudStorage;
-        private IConfiguration _configuration;
-        private FileContext _fileContext;
 
-        public FileController(IStorage cloudStorage, IConfiguration iconfiguration, FileContext fileContext)
+        private readonly FileManager _fileManager;
+
+        public FileController(FileManager fileManager)
 		{
-			_cloudStorage = cloudStorage;
-			_configuration = iconfiguration;
-			_fileContext = fileContext;
+			_fileManager = fileManager;
 
 		}
 
@@ -33,88 +30,53 @@ namespace Buffalo.Controllers
 		public async Task<IActionResult> GetFile(Guid id)
 		{
 
-
-			var storedFile = _fileContext.Files.Find(id);
-
-			if (storedFile == null)
-			{
-				return NotFound("File not exists.");
-				//throw new HttpResponseException(404, "File not exists.");
+            try
+            {
+				var file = await _fileManager.GetFile(id, User.Identity.Name);
+				return File(file.Data, file.MimeType, file.FileName);
 			}
-
-			try {
-
-				if (storedFile.AccessType == AccessModes.PROTECTED && User.Identity != null)
-                {
-					if (storedFile.UploadedBy != User.Identity.Name)
-                    {
-						return Unauthorized("Unauthorized access to PROTECTED resource");
-                    }
-                }
-
-				var file = await _cloudStorage.RetrieveFileAsync(id);
-
-				return File(file, storedFile.ContentType ?? "application/octet-stream", storedFile.FileName);
-
-			}
-            catch (Exception ex)
+            catch (FileNotFoundException ex)
             {
 				return NotFound(ex.Message);
             }
-
-
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(ex.Message);
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(ex.Message);
+			}
+			catch (ApplicationException ex)
+			{
+				return Problem("Application Error");
+			}
 		}
 
-        // POST api/<FileController>
-        [HttpPost, DisableRequestSizeLimit]
+		// POST api/<FileController>
+		[HttpPost, DisableRequestSizeLimit]
 		public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromForm, Required] AccessModes accessMode = AccessModes.PRIVATE)
 		{
 			try
-			{ 
-				Console.WriteLine($"New picture request -> {file.FileName}");
-
-				if (file.Length > 0)
-				{
-					Guid fileId = Guid.NewGuid();
-
-					string imageUrl = await _cloudStorage.UploadFileAsync(file, fileId.ToString(), accessMode);
-
-					string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName);
-
-					Models.File fileRecord = new()
-					{
-						CreatedOn = DateTime.UtcNow,
-						FileId = fileId,
-						FileName = file.FileName,
-						ContentType = file.ContentType,
-						AccessType = accessMode,
-						UploadedBy = User.Identity.Name
-					};
-
-					_fileContext.Files.Add(fileRecord);
-
-					await _fileContext.SaveChangesAsync();
-
-					return Ok(new FileDto
-                    {
-						ContentType = mime,
-						AccessType = accessMode,
-						CreatedOn = DateTime.UtcNow,
-						FileId = fileId,
-						FileName = file.FileName,
-						UploadedBy = User.Identity.Name,
-						ResourceUri = imageUrl,
-
-					});
-				}
-				else
-				{
-					return BadRequest();
-				}
-			}
-			catch (Exception ex)
 			{
-				return StatusCode(500, $"Internal server error: {ex}");
+				var newFile = await _fileManager.UploadFile(file, User.Identity.Name, accessMode);
+				return Created(newFile.ResourceUri ?? "/", newFile);
+			}
+			catch (FileNotFoundException ex)
+			{
+				return NotFound(ex.Message);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(ex.Message);
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(ex.Message);
+			}
+			catch (ApplicationException ex)
+			{
+				return Problem("Application Error");
 			}
 		}
 
@@ -123,44 +85,37 @@ namespace Buffalo.Controllers
         [HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAsync(Guid id)
 		{
-			
-			var storedFile = _fileContext.Files.Find(id);
 
-			if (storedFile == null)
+			try
 			{
-				return NotFound("File not exists.");
-				//throw new HttpResponseException(404, "File not exists.");
-			}
-			else
-			{
-
-				if (storedFile.AccessType == AccessModes.PROTECTED && User.Identity != null)
-				{
-					if (storedFile.UploadedBy != User.Identity.Name)
-					{
-						return Unauthorized("Unauthorized access to PROTECTED resource");
-					}
+				bool deleted = await _fileManager.DeleteFile(id, User.Identity.Name);
+				if (deleted)
+                {
+					return NoContent();
 				}
-
-					_fileContext.Files.Remove(storedFile);
-
-				try
-				{
-					await _cloudStorage.DeleteFileAsync(id.ToString());
-				}
-
-				catch (Exception e)
-				{
-					await _fileContext.SaveChangesAsync();
+                else
+                {
 					return BadRequest();
-				}
-
-				await _fileContext.SaveChangesAsync();
-
-				return NoContent();
+                }
 
 			}
-			
+			catch (FileNotFoundException ex)
+			{
+				return NotFound(ex.Message);
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				return Unauthorized(ex.Message);
+			}
+			catch (ArgumentException ex)
+			{
+				return BadRequest(ex.Message);
+			}
+			catch (ApplicationException ex)
+			{
+				return Problem("Application Error");
+			}
+
 		}
-    }
+	}
 }

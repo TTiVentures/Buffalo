@@ -12,16 +12,15 @@ namespace Buffalo.Implementations
 {
 	public class GoogleCloudStorage : IStorage, IDisposable
 	{
-		private readonly GoogleCredential googleCredential;
 		private readonly StorageClient storageClient;
 		private readonly string bucketName;
 
 		public GoogleCloudStorage(IOptions<GCSOptions> options)
 		{
 
-			googleCredential = GoogleCredential.FromJson(options.Value.JsonCredentialsFile);
+			var googleCredential = GoogleCredential.FromJson(options.Value.JsonCredentialsFile);
 			storageClient = StorageClient.Create(googleCredential);
-			bucketName = options.Value.StorageBucket;
+			bucketName = options.Value.StorageBucket ?? "default";
 		}
 
 		public async Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode)
