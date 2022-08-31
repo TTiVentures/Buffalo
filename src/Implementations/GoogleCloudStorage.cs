@@ -23,14 +23,27 @@ namespace Buffalo.Implementations
 			bucketName = options.Value.StorageBucket ?? "default";
 		}
 
-		public async Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode)
+		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessModes accessMode, string user)
 		{
 			using (MemoryStream memoryStream = new MemoryStream())
 			{
-				await imageFile.CopyToAsync(memoryStream);
+				await file.CopyToAsync(memoryStream);
+
+				var obj = new Google.Apis.Storage.v1.Data.Object
+				{
+					Bucket = bucketName,
+					Name = fileNameForStorage,
+					ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
+					Metadata = new Dictionary<string, string>
+					{
+						{ "buffalo_accessmode", accessMode.ToString() },
+						{ "buffalo_user", user },
+						{ "buffalo_filename", file.FileName }
+					}
+				};
+
 				Google.Apis.Storage.v1.Data.Object dataObject =
-					await storageClient.UploadObjectAsync(bucketName, fileNameForStorage,
-					imageFile.ContentType ?? MimeTypeTool.GetMimeType(imageFile.FileName), memoryStream, new UploadObjectOptions
+					await storageClient.UploadObjectAsync(obj, memoryStream, new UploadObjectOptions
 					{
 						PredefinedAcl = (accessMode == AccessModes.PUBLIC) ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
 					});
@@ -39,9 +52,16 @@ namespace Buffalo.Implementations
 			}
 		}
 
-		public async Task DeleteFileAsync(string fileNameForStorage)
+		public async Task DeleteFileAsync(Guid id, string user)
 		{
-			await storageClient.DeleteObjectAsync(bucketName, fileNameForStorage);
+			var obj = storageClient.GetObject(bucketName, id.ToString());
+
+			if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+			{
+				throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
+			}
+
+			await storageClient.DeleteObjectAsync(bucketName, id.ToString());
 		}
 
 		public void Dispose()
@@ -49,9 +69,17 @@ namespace Buffalo.Implementations
 			storageClient?.Dispose();
 		}
 
-		public async Task<Stream> RetrieveFileAsync(Guid id)
+		public async Task<FileData> RetrieveFileAsync(Guid id, string user)
 
 		{
+
+			var obj = storageClient.GetObject(bucketName, id.ToString());
+
+			if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+			{
+				throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
+			}
+
 			var memoryStream = new MemoryStream();
 			
 				// IDownloadProgress defined in Google.Apis.Download namespace
@@ -64,7 +92,12 @@ namespace Buffalo.Implementations
 
 				memoryStream.Position = 0;
 
-				return memoryStream;
+			return new FileData
+			{
+				Data = memoryStream,
+				FileName = obj.Metadata["buffalo_filename"],
+				MimeType = obj.ContentType
+			};
 
 			
 

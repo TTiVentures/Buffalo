@@ -41,7 +41,7 @@ namespace Buffalo.Implementations
 
 		}
 
-		public async Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode)
+		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessModes accessMode, string user)
 		{
 			try
 			{
@@ -55,12 +55,16 @@ namespace Buffalo.Implementations
 
 				var uploadRequest = new TransferUtilityUploadRequest
 				{
-					InputStream = imageFile.OpenReadStream(),
+					InputStream = file.OpenReadStream(),
 					Key = fileNameForStorage,
-					ContentType = imageFile.ContentType,
+					ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
 					BucketName = bucketName,
 					CannedACL = (accessMode == AccessModes.PUBLIC) ? S3CannedACL.PublicRead : S3CannedACL.Private
 				};
+
+				uploadRequest.Metadata.Add("buffalo_user", user);
+				uploadRequest.Metadata.Add("buffalo_accessmode", accessMode.ToString());
+				uploadRequest.Metadata.Add("buffalo_filename", file.FileName);
 
 
 				var fileTransferUtility = new TransferUtility(s3Client);
@@ -86,16 +90,23 @@ namespace Buffalo.Implementations
 
 		}
 
-		public async Task DeleteFileAsync(string fileNameForStorage)
+		public async Task DeleteFileAsync(Guid id, string user)
 		{
 			try
 			{
+
+				var obj = await s3Client.GetObjectAsync(BucketName, id.ToString());
+
+				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+				{
+					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
+				}
 
 				var fileTransferUtility = new TransferUtility(s3Client);
 				await fileTransferUtility.S3Client.DeleteObjectAsync(new DeleteObjectRequest()
 				{
 					BucketName = BucketName,
-					Key = fileNameForStorage
+					Key = id.ToString()
 				});
 			}
 
@@ -119,11 +130,18 @@ namespace Buffalo.Implementations
 
 		}
 
-		public async Task<Stream> RetrieveFileAsync(Guid id)
+		public async Task<FileData> RetrieveFileAsync(Guid id, string user)
 
 		{
 			try
 			{
+				var obj = await s3Client.GetObjectAsync(BucketName, id.ToString());
+
+				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+                {
+					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
+				}
+
 				var fileTransferUtility = new TransferUtility(s3Client);
 
 				var objectResponse = await fileTransferUtility.S3Client.GetObjectAsync(new GetObjectRequest()
@@ -137,7 +155,12 @@ namespace Buffalo.Implementations
 					throw new Exception("File not exists.");
 				}
 
-				return objectResponse.ResponseStream;
+				return new FileData
+                {
+					Data = objectResponse.ResponseStream,
+					FileName = obj.Metadata["buffalo_filename"],
+					MimeType = obj.Headers["Content-Type"],
+				};
 			}
 			catch (AmazonS3Exception amazonS3Exception)
 			{

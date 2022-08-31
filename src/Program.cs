@@ -37,7 +37,7 @@ string json = JsonConvert.SerializeObject(settings);
 
 builder.Services.AddBuffalo(x =>
 {
-    
+    /*
     x.UseAmazonS3(y =>
     {
         y.AccessKey = amazonOptions.AccessKey;
@@ -47,14 +47,14 @@ builder.Services.AddBuffalo(x =>
         y.RegionEndpoint = amazonOptions.RegionEndpoint;
     });
     
-
-    /*
+    */
+    
     x.UseCloudStorage(z =>
     {
         z.JsonCredentialsFile = json;
         z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
     });
-    */
+    
 
 });
 
@@ -87,12 +87,6 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
-
-builder.Services.AddDbContext<FileContext>(options => options.UseSqlite($"Data Source=./files.db"));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

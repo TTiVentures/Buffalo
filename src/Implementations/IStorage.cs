@@ -4,10 +4,10 @@ namespace Buffalo.Implementations
 {
 	public interface IStorage
 	{
-		Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode);
+		Task<string> UploadFileAsync(IFormFile imageFile, string fileNameForStorage, AccessModes accessMode, string? user);
 
-		Task<Stream> RetrieveFileAsync(Guid id);
+		Task<FileData> RetrieveFileAsync(Guid id, string? user);
 
-		Task DeleteFileAsync(string fileNameForStorage);
+		Task DeleteFileAsync(Guid id, string? user);
 	}
 }
