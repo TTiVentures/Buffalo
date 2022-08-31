@@ -16,25 +16,17 @@ namespace Buffalo.Implementations
 
 		public async Task<FileData> GetFile(Guid id, string? user)
 		{
-			try
-			{
 
 				var file = await _cloudStorage.RetrieveFileAsync(id, user);
 
 				return file;
 
-			}
-			catch (Exception ex)
-			{
-				throw new FileNotFoundException(ex.Message);
-
-			}
+			
 		}
 
-		public async Task<FileDto> UploadFile(IFormFile file, string user, AccessModes accessMode = AccessModes.PRIVATE)
+		public async Task<FileDto> UploadFile(IFormFile file, string? user, AccessModes accessMode = AccessModes.PRIVATE)
 		{
-			try
-			{
+
 				Console.WriteLine($"New picture request -> {file.FileName}");
 
 				if (file.Length > 0)
@@ -61,28 +53,13 @@ namespace Buffalo.Implementations
 				{
 					throw new ArgumentException("File size can not be 0");
 				}
-			}
-			catch (Exception ex)
-			{
-				throw new ApplicationException($"Internal server error: {ex}");
-			}
+
 		}
 
 		public async Task<bool> DeleteFile(Guid id, string? user)
 		{
-			try { 
 			await _cloudStorage.DeleteFileAsync(id, user);
 			return true;
-			}
-            catch (Exception ex)
-            {
-				throw new FileNotFoundException(ex.Message);
-
-			}
-
-
-
-
 		}
 
 	}

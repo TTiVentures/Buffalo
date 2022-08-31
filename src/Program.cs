@@ -1,7 +1,6 @@
 using Buffalo;
 using Buffalo.Extensions.DependencyInjection;
 using Buffalo.Options;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;

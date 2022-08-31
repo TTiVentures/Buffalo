@@ -32,7 +32,8 @@ namespace Buffalo.Controllers
 
             try
             {
-				var file = await _fileManager.GetFile(id, User.Identity.Name);
+				var file = await _fileManager.GetFile(id, User.Identity?.Name);
+
 				return File(file.Data, file.MimeType, file.FileName);
 			}
             catch (FileNotFoundException ex)
@@ -59,7 +60,7 @@ namespace Buffalo.Controllers
 		{
 			try
 			{
-				var newFile = await _fileManager.UploadFile(file, User.Identity.Name, accessMode);
+				var newFile = await _fileManager.UploadFile(file, User.Identity?.Name, accessMode);
 				return Created(newFile.ResourceUri ?? "/", newFile);
 			}
 			catch (FileNotFoundException ex)
@@ -88,7 +89,7 @@ namespace Buffalo.Controllers
 
 			try
 			{
-				bool deleted = await _fileManager.DeleteFile(id, User.Identity.Name);
+				bool deleted = await _fileManager.DeleteFile(id, User.Identity?.Name);
 				if (deleted)
                 {
 					return NoContent();

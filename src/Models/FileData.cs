@@ -2,7 +2,14 @@
 {
     public class FileData
     {
-        public Stream? Data { get; set; }
+        public FileData(Stream data, string fileName, string mimeType)
+        {
+            Data = data;
+            FileName = fileName;
+            MimeType = mimeType;
+        }
+
+        public Stream Data { get; set; }
         public string FileName { get; set; } = "file.bin";
         public string MimeType { get; set; } = "application/octet-stream";
 
