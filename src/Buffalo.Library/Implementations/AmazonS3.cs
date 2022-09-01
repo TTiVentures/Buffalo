@@ -32,7 +32,7 @@ namespace Buffalo.Implementations
 
         }
 
-        public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessModes accessMode, string? user)
+        public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessLevels accessLevel, string? user)
         {
             try
             {
@@ -50,11 +50,11 @@ namespace Buffalo.Implementations
                     Key = fileNameForStorage,
                     ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
                     BucketName = bucketName,
-                    CannedACL = (accessMode == AccessModes.PUBLIC) ? S3CannedACL.PublicRead : S3CannedACL.Private
+                    CannedACL = (accessLevel == AccessLevels.PUBLIC) ? S3CannedACL.PublicRead : S3CannedACL.Private
                 };
 
                 uploadRequest.Metadata.Add("buffalo_user", user);
-                uploadRequest.Metadata.Add("buffalo_accessmode", accessMode.ToString());
+                uploadRequest.Metadata.Add("buffalo_accessmode", accessLevel.ToString());
                 uploadRequest.Metadata.Add("buffalo_filename", file.FileName);
 
 

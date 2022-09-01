@@ -7,62 +7,62 @@ namespace Buffalo.Implementations
 {
     public class FileManager
     {
-        private IStorage _cloudStorage;
+        private readonly IStorage _cloudStorage;
 
         public FileManager(IStorage cloudStorage)
-		{
-			_cloudStorage = cloudStorage;
+        {
+            _cloudStorage = cloudStorage;
 
-		}
+        }
 
-		public async Task<FileData> GetFile(Guid id, string? user)
-		{
+        public async Task<FileData> GetFile(Guid id, string? user)
+        {
+            return await _cloudStorage.RetrieveFileAsync(id, user);
+        }
 
-				var file = await _cloudStorage.RetrieveFileAsync(id, user);
+        public async Task<FileDto> UploadFile(IFormFile file, string? user, AccessLevels accessLevel = AccessLevels.PRIVATE)
+        {
 
-				return file;
+            Console.WriteLine($"New picture request -> {file.FileName}");
 
-			
-		}
+            if (accessLevel == AccessLevels.PROTECTED && string.IsNullOrEmpty(user))
+            {
+                throw new ArgumentException("PROTECTED level access requires a non empty user");
+            }
 
-		public async Task<FileDto> UploadFile(IFormFile file, string? user, AccessModes accessMode = AccessModes.PRIVATE)
-		{
+            if (file.Length > 0)
+            {
+                Guid fileId = Guid.NewGuid();
 
-				Console.WriteLine($"New picture request -> {file.FileName}");
+                string imageUrl = await _cloudStorage.UploadFileAsync(file, fileId.ToString(), accessLevel, user);
 
-				if (file.Length > 0)
-				{
-					Guid fileId = Guid.NewGuid();
+                string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName);
 
-					string imageUrl = await _cloudStorage.UploadFileAsync(file, fileId.ToString(), accessMode, user);
+                return new FileDto
+                {
+                    ContentType = mime,
+                    AccessType = accessLevel,
+                    CreatedOn = DateTime.UtcNow,
+                    FileId = fileId,
+                    FileName = file.FileName,
+                    UploadedBy = user,
+                    ResourceUri = imageUrl
 
-					string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName);
+                };
+            }
+            else
+            {
+                throw new ArgumentException("File size can not be 0");
+            }
 
-					return new FileDto
-					{
-						ContentType = mime,
-						AccessType = accessMode,
-						CreatedOn = DateTime.UtcNow,
-						FileId = fileId,
-						FileName = file.FileName,
-						UploadedBy = user,
-						ResourceUri = imageUrl
+        }
 
-					};
-				}
-				else
-				{
-					throw new ArgumentException("File size can not be 0");
-				}
+        public async Task<bool> DeleteFile(Guid id, string? user)
+        {
+            await _cloudStorage.DeleteFileAsync(id, user);
+            return true;
+        }
 
-		}
-
-		public async Task<bool> DeleteFile(Guid id, string? user)
-		{
-			await _cloudStorage.DeleteFileAsync(id, user);
-			return true;
-		}
-
-	}
+    }
 
 }

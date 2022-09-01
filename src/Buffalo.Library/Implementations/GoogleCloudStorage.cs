@@ -24,7 +24,7 @@ namespace Buffalo.Implementations
             bucketName = options.Value.StorageBucket ?? "default";
         }
 
-        public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessModes accessMode, string? user)
+        public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessLevels accessLevel, string? user)
         {
             using MemoryStream memoryStream = new();
             await file.CopyToAsync(memoryStream);
@@ -36,7 +36,7 @@ namespace Buffalo.Implementations
                 ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
                 Metadata = new Dictionary<string, string>
                     {
-                        { "buffalo_accessmode", accessMode.ToString() },
+                        { "buffalo_accessmode", accessLevel.ToString() },
                         { "buffalo_user", user ?? "" },
                         { "buffalo_filename", file.FileName }
                     }
@@ -45,7 +45,7 @@ namespace Buffalo.Implementations
             Google.Apis.Storage.v1.Data.Object dataObject =
                 await storageClient.UploadObjectAsync(obj, memoryStream, new UploadObjectOptions
                 {
-                    PredefinedAcl = (accessMode == AccessModes.PUBLIC) ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
+                    PredefinedAcl = (accessLevel == AccessLevels.PUBLIC) ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
                 });
 
             return "https://storage.cloud.google.com/" + dataObject.Bucket + "/" + dataObject.Name;
@@ -53,7 +53,8 @@ namespace Buffalo.Implementations
 
         public async Task DeleteFileAsync(Guid id, string? user)
         {
-            try { 
+            try
+            {
 
                 var obj = storageClient.GetObject(bucketName, id.ToString());
 

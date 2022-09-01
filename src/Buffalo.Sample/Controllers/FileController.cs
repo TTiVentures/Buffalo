@@ -1,9 +1,5 @@
-﻿using Buffalo;
-using Buffalo.Dto;
-using Buffalo.Implementations;
+﻿using Buffalo.Implementations;
 using Buffalo.Models;
-using Buffalo.Utils;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -20,103 +16,103 @@ namespace Buffalo.Controllers
         private readonly FileManager _fileManager;
 
         public FileController(FileManager fileManager)
-		{
-			_fileManager = fileManager;
+        {
+            _fileManager = fileManager;
 
-		}
+        }
 
         // GET api/<FileController>/5
         [HttpGet("{id}")]
-		public async Task<IActionResult> GetFile(Guid id)
-		{
+        public async Task<IActionResult> GetFile(Guid id)
+        {
 
             try
             {
-				var file = await _fileManager.GetFile(id, User.Identity?.Name);
+                var file = await _fileManager.GetFile(id, User.Identity?.Name);
 
-				return File(file.Data, file.MimeType, file.FileName);
-			}
+                return File(file.Data, file.MimeType, file.FileName);
+            }
             catch (FileNotFoundException ex)
             {
-				return NotFound(ex.Message);
+                return NotFound(ex.Message);
             }
-			catch (UnauthorizedAccessException ex)
-			{
-				return Unauthorized(ex.Message);
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(ex.Message);
-			}
-			catch (ApplicationException ex)
-			{
-				return Problem("Application Error");
-			}
-		}
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ApplicationException)
+            {
+                return Problem("Application Error");
+            }
+        }
 
-		// POST api/<FileController>
-		[HttpPost, DisableRequestSizeLimit]
-		public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromForm, Required] AccessModes accessMode = AccessModes.PRIVATE)
-		{
-			try
-			{
-				var newFile = await _fileManager.UploadFile(file, User.Identity?.Name, accessMode);
-				return Created(newFile.ResourceUri ?? "/", newFile);
-			}
-			catch (FileNotFoundException ex)
-			{
-				return NotFound(ex.Message);
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				return Unauthorized(ex.Message);
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(ex.Message);
-			}
-			catch (ApplicationException ex)
-			{
-				return Problem("Application Error");
-			}
-		}
+        // POST api/<FileController>
+        [HttpPost, DisableRequestSizeLimit]
+        public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromForm, Required] AccessLevels accessLevel = AccessLevels.PRIVATE)
+        {
+            try
+            {
+                var newFile = await _fileManager.UploadFile(file, User.Identity?.Name, accessLevel);
+                return Created(newFile.ResourceUri ?? "/", newFile);
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ApplicationException)
+            {
+                return Problem("Application Error");
+            }
+        }
 
 
         // DELETE api/<FileController>/5
         [HttpDelete("{id}")]
-		public async Task<IActionResult> DeleteAsync(Guid id)
-		{
+        public async Task<IActionResult> DeleteAsync(Guid id)
+        {
 
-			try
-			{
-				bool deleted = await _fileManager.DeleteFile(id, User.Identity?.Name);
-				if (deleted)
+            try
+            {
+                bool deleted = await _fileManager.DeleteFile(id, User.Identity?.Name);
+                if (deleted)
                 {
-					return NoContent();
-				}
+                    return NoContent();
+                }
                 else
                 {
-					return BadRequest();
+                    return BadRequest();
                 }
 
-			}
-			catch (FileNotFoundException ex)
-			{
-				return NotFound(ex.Message);
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				return Unauthorized(ex.Message);
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(ex.Message);
-			}
-			catch (ApplicationException ex)
-			{
-				return Problem("Application Error");
-			}
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ApplicationException)
+            {
+                return Problem("Application Error");
+            }
 
-		}
-	}
+        }
+    }
 }

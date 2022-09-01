@@ -1,9 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Buffalo.Models
+﻿namespace Buffalo.Models
 {
 
-    public enum AccessModes
+    public enum AccessLevels
     {
         PUBLIC = 0,
         PRIVATE = 1,

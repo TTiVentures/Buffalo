@@ -33,7 +33,7 @@ string json = JsonConvert.SerializeObject(settings);
 
 builder.Services.AddBuffalo(x =>
 {
-    
+
     x.UseAmazonS3(y =>
     {
         y.AccessKey = amazonOptions.AccessKey;
@@ -42,7 +42,7 @@ builder.Services.AddBuffalo(x =>
         y.FolderName = amazonOptions.FolderName;
         y.RegionEndpoint = amazonOptions.RegionEndpoint;
     });
-    
+
     /*
     
     x.UseCloudStorage(z =>
