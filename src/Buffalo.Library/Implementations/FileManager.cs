@@ -1,6 +1,7 @@
 ﻿using Buffalo.Dto;
 using Buffalo.Models;
 using Buffalo.Utils;
+using Microsoft.AspNetCore.Http;
 
 namespace Buffalo.Implementations
 {

@@ -7,7 +7,7 @@ namespace Buffalo.Utils
 		public static string GetMimeType(string fileName)
 		{
 			FileExtensionContentTypeProvider provider = new FileExtensionContentTypeProvider();
-			if (!provider.TryGetContentType(fileName, out string contentType))
+			if (!provider.TryGetContentType(fileName, out string? contentType))
 			{
 				contentType = "application/octet-stream";
 			}

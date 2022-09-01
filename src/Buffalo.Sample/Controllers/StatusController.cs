@@ -20,13 +20,9 @@ namespace Buffalo.Controllers
 		}
 	}
 
-	internal class ServerStatusDto
-	{
-		public ServerStatusDto()
-		{
-		}
-
-		public string Via { get; set; }
-		public DateTime UtcDateTime { get; set; }
-	}
+    internal class ServerStatusDto
+    {
+        public string? Via { get; set; }
+        public DateTime UtcDateTime { get; set; }
+    }
 }

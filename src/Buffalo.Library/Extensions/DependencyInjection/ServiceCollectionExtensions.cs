@@ -10,7 +10,7 @@ namespace Buffalo.Extensions.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddBuffalo(
-            this IServiceCollection services, Action<IBuffaloBuilder> builderAction = null)
+            this IServiceCollection services, Action<IBuffaloBuilder> builderAction)
         {
             services.AddScoped<FileManager>();
 

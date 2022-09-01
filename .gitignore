@@ -456,3 +456,4 @@ src/appsettings.json
 src/files.db
 src/files.db-shm
 src/files.db-wal
+src/Buffalo.Sample/appsettings.json

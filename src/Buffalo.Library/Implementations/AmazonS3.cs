@@ -5,6 +5,7 @@ using Amazon.S3.Transfer;
 using Buffalo.Models;
 using Buffalo.Options;
 using Buffalo.Utils;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace Buffalo.Implementations
@@ -105,11 +106,11 @@ namespace Buffalo.Implementations
                 if (amazonS3Exception.ErrorCode != null
                     && (amazonS3Exception.ErrorCode.Equals("InvalidAccessKeyId") || amazonS3Exception.ErrorCode.Equals("InvalidSecurity")))
                 {
-                    throw new Exception("Check the provided AWS Credentials.");
+                    throw new UnauthorizedAccessException("Provided Amazon S3 credentials do not have access to this resource.");
                 }
                 else if (amazonS3Exception.ErrorCode != null && amazonS3Exception.ErrorCode.Equals("NoSuchKey"))
                 {
-                    throw new Exception(amazonS3Exception.ErrorCode);
+                    throw new FileNotFoundException(amazonS3Exception.ErrorCode);
                 }
                 else
                 {

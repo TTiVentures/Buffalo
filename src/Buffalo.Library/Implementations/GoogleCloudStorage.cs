@@ -6,6 +6,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace Buffalo.Implementations
@@ -121,7 +122,7 @@ namespace Buffalo.Implementations
 
                 }
             }
-            catch (TokenResponseException e)
+            catch (TokenResponseException)
             {
                 throw new UnauthorizedAccessException("Provided Cloud Storage credentials do not have access to this resource.");
             }

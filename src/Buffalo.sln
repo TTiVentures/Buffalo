@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Buffalo", "Buffalo.csproj", "{46AC5DCB-25CA-4F8F-98BE-2EB7926BE4FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buffalo.Library", "Buffalo.Library\Buffalo.Library.csproj", "{B4938B2C-991B-4BD4-844F-CBA681F5C5B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buffalo.Sample", "Buffalo.Sample\Buffalo.Sample.csproj", "{25CBBDBB-6D12-4310-8515-34849C73EBDF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{46AC5DCB-25CA-4F8F-98BE-2EB7926BE4FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{46AC5DCB-25CA-4F8F-98BE-2EB7926BE4FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{46AC5DCB-25CA-4F8F-98BE-2EB7926BE4FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{46AC5DCB-25CA-4F8F-98BE-2EB7926BE4FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4938B2C-991B-4BD4-844F-CBA681F5C5B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4938B2C-991B-4BD4-844F-CBA681F5C5B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4938B2C-991B-4BD4-844F-CBA681F5C5B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4938B2C-991B-4BD4-844F-CBA681F5C5B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

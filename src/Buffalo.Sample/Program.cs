@@ -1,4 +1,3 @@
-using Buffalo;
 using Buffalo.Extensions.DependencyInjection;
 using Buffalo.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -15,8 +14,6 @@ builder.Services.AddControllers().AddJsonOptions(opts =>
     var enumConverter = new JsonStringEnumConverter();
     opts.JsonSerializerOptions.Converters.Add(enumConverter);
 });
-
-
 
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -36,7 +33,7 @@ string json = JsonConvert.SerializeObject(settings);
 
 builder.Services.AddBuffalo(x =>
 {
-    /*
+    
     x.UseAmazonS3(y =>
     {
         y.AccessKey = amazonOptions.AccessKey;
@@ -46,14 +43,14 @@ builder.Services.AddBuffalo(x =>
         y.RegionEndpoint = amazonOptions.RegionEndpoint;
     });
     
-    */
+    /*
     
     x.UseCloudStorage(z =>
     {
         z.JsonCredentialsFile = json;
         z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
     });
-    
+    */
 
 });
 
