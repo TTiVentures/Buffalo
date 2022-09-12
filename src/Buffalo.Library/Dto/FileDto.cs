@@ -1,8 +1,8 @@
-﻿using Buffalo.Models;
+﻿using Buffalo.Library.Models;
 
 namespace Buffalo.Dto
 {
-    public class FileDto
+	public class FileDto
     {
         public Guid FileId { get; set; }
         public string? FileName { get; set; }

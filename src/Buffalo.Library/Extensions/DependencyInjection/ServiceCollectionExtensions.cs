@@ -1,67 +1,59 @@
-﻿using Buffalo.Implementations;
-using Buffalo.Options;
+﻿using Buffalo.Library.Implementations;
+using Buffalo.Library.Options;
 using Microsoft.Extensions.DependencyInjection;
 
 
-namespace Buffalo.Extensions.DependencyInjection
+namespace Buffalo.Library.Extensions.DependencyInjection
 {
+	public static class ServiceCollectionExtensions
+	{
+		public static IServiceCollection AddBuffalo(
+			this IServiceCollection services, Action<IBuffaloBuilder> builderAction)
+		{
+			services.AddScoped<FileManager>();
 
+			BuffaloBuilder? options = new(services);
 
-    public static class ServiceCollectionExtensions
-    {
-        public static IServiceCollection AddBuffalo(
-            this IServiceCollection services, Action<IBuffaloBuilder> builderAction)
-        {
-            services.AddScoped<FileManager>();
+			builderAction?.Invoke(options);
 
-            var options = new BuffaloBuilder(services);
+			return services;
+		}
 
-            builderAction?.Invoke(options);
+		public static IBuffaloBuilder UseAmazonS3(this IBuffaloBuilder me, Action<S3Options> options)
+		{
 
-            return services;
-        }
+			me.Services.AddOptions<S3Options>()
+				.Configure(options)
+				.ValidateDataAnnotations();
 
-        public static IBuffaloBuilder UseAmazonS3(this IBuffaloBuilder me, Action<S3Options> options)
-        {
+			me.Services.AddScoped<IStorage, AmazonS3>();
 
-            me.Services.AddOptions<S3Options>()
-                .Configure(options)
-                .ValidateDataAnnotations();
+			return me;
+		}
 
-            me.Services.AddScoped<IStorage, AmazonS3>();
+		public static IBuffaloBuilder UseCloudStorage(this IBuffaloBuilder me, Action<GCSOptions> options)
+		{
+			me.Services.AddOptions<GCSOptions>()
+				.Configure(options)
+				.ValidateDataAnnotations();
 
-            return me;
-        }
+			me.Services.AddScoped<IStorage, GoogleCloudStorage>();
 
-        public static IBuffaloBuilder UseCloudStorage(this IBuffaloBuilder me, Action<GCSOptions> options)
-        {
-            me.Services.AddOptions<GCSOptions>()
-                .Configure(options)
-                .ValidateDataAnnotations();
+			return me;
+		}
 
-            me.Services.AddScoped<IStorage, GoogleCloudStorage>();
+		public interface IBuffaloBuilder
+		{
+			IServiceCollection Services { get; }
+		}
 
-            return me;
-        }
-
-
-        public interface IBuffaloBuilder
-        {
-            IServiceCollection Services { get; }
-        }
-
-
-        internal class BuffaloBuilder : IBuffaloBuilder
-        {
-            public BuffaloBuilder(IServiceCollection services)
-            {
-                Services = services;
-            }
-            public IServiceCollection Services { get; }
-
-
-        }
-
-
-    }
+		internal class BuffaloBuilder : IBuffaloBuilder
+		{
+			public BuffaloBuilder(IServiceCollection services)
+			{
+				Services = services;
+			}
+			public IServiceCollection Services { get; }
+		}
+	}
 }

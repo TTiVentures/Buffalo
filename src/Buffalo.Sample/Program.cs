@@ -1,5 +1,6 @@
-using Buffalo.Extensions.DependencyInjection;
-using Buffalo.Options;
+using Buffalo.Library.Extensions.DependencyInjection;
+using Buffalo.Library.Options;
+using Buffalo.Sample;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
@@ -54,7 +55,6 @@ builder.Services.AddBuffalo(x =>
 
 });
 
-
 builder.Services.AddAuthentication("Bearer")
             .AddJwtBearer("Bearer", options =>
             {
@@ -67,7 +67,6 @@ builder.Services.AddAuthentication("Bearer")
                     RoleClaimType = "role",
                 };
             });
-
 
 builder.Services.AddAuthorization(options =>
 {
