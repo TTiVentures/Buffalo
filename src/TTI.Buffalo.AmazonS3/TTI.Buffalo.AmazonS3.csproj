@@ -10,4 +10,8 @@
 		<PackageReference Include="AWSSDK.S3" Version="3.7.9.50" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\TTI.Buffalo\TTI.Buffalo.csproj" />
+	</ItemGroup>
+
 </Project>

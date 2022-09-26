@@ -8,4 +8,7 @@
 	<ItemGroup>
 		<PackageReference Include="Google.Cloud.Storage.V1" Version="4.1.0" />
 	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\TTI.Buffalo\TTI.Buffalo.csproj" />
+	</ItemGroup>
 </Project>
