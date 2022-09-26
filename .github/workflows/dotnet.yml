@@ -1,25 +1,84 @@
-name: .NET
+#name: .NET
 
-on:
+#on:
+#  push:
+#    branches: [ "main" ]
+#  pull_request:
+#    branches: [ "main" ]
+
+#jobs:
+#  build:
+
+#    runs-on: ubuntu-latest
+
+#    steps:
+#    - uses: actions/checkout@v3
+#    - name: Setup .NET
+#      uses: actions/setup-dotnet@v2
+#      with:
+#        dotnet-version: 6.0.x
+#    - name: Restore dependencies
+#      run: dotnet restore
+#    - name: Build
+#      run: dotnet build --no-restore
+#    - name: Test
+#      run: dotnet test --no-build --verbosity normal
+
+
+
+
+
+
+
+name: .NET Core
+
+on: 
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches-ignore:
+      - 'module/**' 
 
 jobs:
   build:
 
-    runs-on: ubuntu-latest
-
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+
+    - name: Checkout
+      uses: actions/checkout@v2
       with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
+        fetch-depth: 0
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.7
+      with:
+        versionSpec: '5.x'
+
+    - name: Use GitVersion
+      id: gitversion # step id used as reference for output values
+      uses: gittools/actions/gitversion/execute@v0.9.7
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '6.x.x'
+
+    - name: Install dependencies
+      run: dotnet restore -p:RestoreUseSkipNonexistentTargets=false src/Buffalo-pack.sln
+
     - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.gitversion.outputs.semVer }} src/Buffalo-pack.sln
+
+#    - name: Run tests
+#      run: dotnet test --configuration Release --no-restore --verbosity minimal src/Fuxion-pack.sln
+
+    - name: Create packages
+      run: dotnet pack --configuration Release --no-build --output nupkgs --no-build -p:PackageVersion=${{ steps.gitversion.outputs.semVer }} src/Buffalo-pack.sln
+
+    #- name: Publish to GitHub Packages
+    #  if: github.ref != 'refs/heads/main'
+    #  run: dotnet nuget push "nupkgs\*.nupkg" --source https://nuget.pkg.github.com/TTiVentures/index.json --api-key ${{secrets.GITHUB_TOKEN}} --skip-duplicate
+
+    #- name: Publish to NuGet.org
+    #  if: github.ref == 'refs/heads/main'
+    #  run: dotnet nuget push "nupkgs\*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_ORG}} --skip-duplicate
+    
