@@ -1,7 +1,6 @@
-﻿using Buffalo.Library.Implementations;
-using Buffalo.Library.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using TTI.Buffalo;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -28,7 +27,7 @@ namespace Buffalo.Sample.Controllers
 
 			try
 			{
-				FileData? file = await _fileManager.GetFile(id, User.Identity?.Name);
+				var file = await _fileManager.GetFile(id, User.Identity?.Name);
 
 				return File(file.Data, file.MimeType, file.FileName);
 			}
@@ -56,7 +55,7 @@ namespace Buffalo.Sample.Controllers
 		{
 			try
 			{
-				Dto.FileDto? newFile = await _fileManager.UploadFile(file, User.Identity?.Name, accessLevel);
+				FileDto? newFile = await _fileManager.UploadFile(file, User.Identity?.Name, accessLevel);
 				return Created(newFile.ResourceUri ?? "/", newFile);
 			}
 			catch (FileNotFoundException ex)

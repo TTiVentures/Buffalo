@@ -1,0 +1,36 @@
+<Project>
+	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<WarningsAsErrors>Nullable</WarningsAsErrors>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<!--<IncludeSymbols>true</IncludeSymbols>-->
+
+		<Title>Buffalo</Title>
+		<Authors>TTI, Aeri</Authors>
+
+		<Product>Buffalo</Product>
+		<ProductName>Buffalo</ProductName>
+
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/TTiVentures/Buffalo</PackageProjectUrl>
+		<PackageIcon>icon.png</PackageIcon>
+
+		<PackageOutputPath>$(SolutionDir)..\output~</PackageOutputPath>
+
+		<RepositoryUrl>https://github.com/TTiVentures/Buffalo.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="icon.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Remove="System.Net.Http" />
+		<Using Include="Microsoft.Extensions.Logging" />
+	</ItemGroup>
+</Project>

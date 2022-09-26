@@ -1,10 +1,10 @@
-using Buffalo.Library.Extensions.DependencyInjection;
-using Buffalo.Library.Options;
 using Buffalo.Sample;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json.Serialization;
+using TTI.Buffalo.AmazonS3;
+using TTI.Buffalo;
 
 var builder = WebApplication.CreateBuilder(args);
 

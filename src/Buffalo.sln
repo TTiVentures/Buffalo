@@ -7,6 +7,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buffalo.Library", "Buffalo.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buffalo.Sample", "Buffalo.Sample\Buffalo.Sample.csproj", "{25CBBDBB-6D12-4310-8515-34849C73EBDF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TTI.Buffalo", "TTI.Buffalo\TTI.Buffalo.csproj", "{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TTI.Buffalo.AmazonS3", "TTI.Buffalo.AmazonS3\TTI.Buffalo.AmazonS3.csproj", "{67565785-2B0A-438D-B956-4B30E91C1CF2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TTI.Buffalo.GoogleCloud", "TTI.Buffalo.GoogleCloud\TTI.Buffalo.GoogleCloud.csproj", "{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Elementos de la solución", "Elementos de la solución", "{CB9C829B-A315-48BA-BB0F-1335D3DAF073}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +32,18 @@ Global
 		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25CBBDBB-6D12-4310-8515-34849C73EBDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67565785-2B0A-438D-B956-4B30E91C1CF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67565785-2B0A-438D-B956-4B30E91C1CF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67565785-2B0A-438D-B956-4B30E91C1CF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67565785-2B0A-438D-B956-4B30E91C1CF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,13 +11,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\..\res\icon\icon.png" Link="icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.8" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.15.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Buffalo.Library\Buffalo.Library.csproj" />
+    <ProjectReference Include="..\TTI.Buffalo.AmazonS3\TTI.Buffalo.AmazonS3.csproj" />
   </ItemGroup>
 
 </Project>
