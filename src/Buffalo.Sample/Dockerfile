@@ -8,7 +8,9 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY ["Buffalo.Sample/Buffalo.Sample.csproj", "Buffalo.Sample/"]
-COPY ["Buffalo.Library/Buffalo.Library.csproj", "Buffalo.Library/"]
+COPY ["TTI.Buffalo.AmazonS3/TTI.Buffalo.AmazonS3.csproj", "TTI.Buffalo.AmazonS3/"]
+COPY ["TTI.Buffalo/TTI.Buffalo.csproj", "TTI.Buffalo/"]
+COPY ["TTI.Buffalo.GoogleCloud/TTI.Buffalo.GoogleCloud.csproj", "TTI.Buffalo.GoogleCloud/"]
 RUN dotnet restore "Buffalo.Sample/Buffalo.Sample.csproj"
 COPY . .
 WORKDIR "/src/Buffalo.Sample"
