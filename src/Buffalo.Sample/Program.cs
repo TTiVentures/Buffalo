@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json.Serialization;
 using TTI.Buffalo.AmazonS3;
 using TTI.Buffalo;
+using TTI.Buffalo.GoogleCloud;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,57 +32,65 @@ Dictionary<string, object> settings = builder.Configuration
   .Get<Dictionary<string, object>>();
 string json = JsonConvert.SerializeObject(settings);
 
+string system = builder.Configuration.GetSection("BuffaloSettings:AvailableSystem").Value;
+
 
 builder.Services.AddBuffalo(x =>
 {
 
-    x.UseAmazonS3(y =>
+    switch (system)
     {
-        y.AccessKey = amazonOptions.AccessKey;
-        y.SecretKey = amazonOptions.SecretKey;
-        y.BucketName = amazonOptions.BucketName;
-        y.FolderName = amazonOptions.FolderName;
-        y.RegionEndpoint = amazonOptions.RegionEndpoint;
-    });
-
-    /*
-    
-    x.UseCloudStorage(z =>
-    {
-        z.JsonCredentialsFile = json;
-        z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
-    });
-    */
-
-});
-
-builder.Services.AddAuthentication("Bearer")
-            .AddJwtBearer("Bearer", options =>
+        case "GCS":
+            x.UseCloudStorage(z =>
             {
-                options.Authority = passportOptions.Authority;
-
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateAudience = false,
-                    NameClaimType = "sub",
-                    RoleClaimType = "role",
-                };
+                z.JsonCredentialsFile = json;
+                z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
             });
+            break;
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("ApiScope", policy =>
-    {
-        policy.RequireAuthenticatedUser();
-
-        if (passportOptions.RequiredClaim != null)
-        {
-            policy.RequireClaim("scope", passportOptions.RequiredClaim);
-        }
-
-    });
+        case "S3":
+            x.UseAmazonS3(y =>
+            {
+                y.AccessKey = amazonOptions.AccessKey;
+                y.SecretKey = amazonOptions.SecretKey;
+                y.BucketName = amazonOptions.BucketName;
+                y.FolderName = amazonOptions.FolderName;
+                y.RegionEndpoint = amazonOptions.RegionEndpoint;
+            });
+            break;
+    }
 });
 
+if (passportOptions.RequireAuthentication) { 
+
+    builder.Services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = passportOptions.Authority;
+
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateAudience = false,
+                        NameClaimType = "sub",
+                        RoleClaimType = "role",
+                    };
+                });
+
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("ApiScope", policy =>
+        {
+            policy.RequireAuthenticatedUser();
+
+            if (passportOptions.RequiredClaim != null)
+            {
+                policy.RequireClaim("scope", passportOptions.RequiredClaim);
+            }
+
+        });
+    });
+
+}
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -100,6 +109,15 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers().RequireAuthorization("ApiScope");
+
+if (passportOptions.RequireAuthentication)
+{
+
+    app.MapControllers().RequireAuthorization("ApiScope");
+}
+else
+{
+    app.MapControllers();
+}
 
 app.Run();

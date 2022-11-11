@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TTI.Buffalo.AmazonS3\TTI.Buffalo.AmazonS3.csproj" />
+    <ProjectReference Include="..\TTI.Buffalo.GoogleCloud\TTI.Buffalo.GoogleCloud.csproj" />
   </ItemGroup>
 
 </Project>
