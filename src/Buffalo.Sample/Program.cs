@@ -11,6 +11,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+if (builder.Environment.IsProduction())
+{
+    string? path = Environment.GetEnvironmentVariable("CONFIG_PATH");
+    if (path == null)
+    {
+        throw new ArgumentException("CONFIG_PATH in non Development Environment can NOT be null");
+    }
+    builder.Configuration.AddJsonFile(path, optional: false, reloadOnChange: true);
+}
+
 builder.Services.AddControllers().AddJsonOptions(opts =>
 {
     var enumConverter = new JsonStringEnumConverter();
