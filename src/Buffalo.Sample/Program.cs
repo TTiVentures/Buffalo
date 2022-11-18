@@ -108,7 +108,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if ((app.Configuration.GetValue<bool?>("BuffaloSettings:UseSwagger") ?? false) == true)
 {
     app.UseSwagger();
     app.UseSwaggerUI();

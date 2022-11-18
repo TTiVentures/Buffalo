@@ -26,4 +26,6 @@
     <ProjectReference Include="..\TTI.Buffalo.GoogleCloud\TTI.Buffalo.GoogleCloud.csproj" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+
 </Project>
