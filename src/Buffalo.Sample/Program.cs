@@ -78,28 +78,15 @@ if (passportOptions.RequireAuthentication) {
                 {
                     options.Authority = passportOptions.Authority;
 
-                    options.TokenValidationParameters = new TokenValidationParameters
+					options.Audience = passportOptions.Audience;
+
+					options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateAudience = false,
+                        ValidateAudience = true,
                         NameClaimType = "sub",
                         RoleClaimType = "role",
                     };
                 });
-
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("ApiScope", policy =>
-        {
-            policy.RequireAuthenticatedUser();
-
-            if (passportOptions.RequiredClaim != null)
-            {
-                policy.RequireClaim("scope", passportOptions.RequiredClaim);
-            }
-
-        });
-    });
-
 }
 
 builder.Services.AddEndpointsApiExplorer();
