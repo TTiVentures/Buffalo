@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using TTI.Buffalo;
 using TTI.Buffalo.AmazonS3;
@@ -13,34 +14,35 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+
 if (builder.Environment.IsProduction())
 {
-	string? path = Environment.GetEnvironmentVariable("CONFIG_PATH");
-	if (string.IsNullOrEmpty(path))
-	{
-		throw new ArgumentException("CONFIG_PATH in non Development Environment can NOT be null");
-	}
+    string? path = Environment.GetEnvironmentVariable("CONFIG_PATH");
+    if (string.IsNullOrEmpty(path))
+    {
+        throw new ArgumentException("CONFIG_PATH in non Development Environment can NOT be null");
+    }
 
-	string? cloud_env = Environment.GetEnvironmentVariable("CLOUD_ENV");
-	if (!string.IsNullOrEmpty(cloud_env))
-	{
-		if (cloud_env == "AWS")
-		{
-			builder.Logging.AddJsonConsole();
-		}
-		else if (cloud_env == "GCP")
-		{
-			builder.Logging.AddGoogleCloudConsole();
-		}
-	}
+    string? cloud_env = Environment.GetEnvironmentVariable("CLOUD_ENV");
+    if (!string.IsNullOrEmpty(cloud_env))
+    {
+        if (cloud_env == "AWS")
+        {
+            builder.Logging.AddJsonConsole();
+        }
+        else if (cloud_env == "GCP")
+        {
+            builder.Logging.AddGoogleCloudConsole();
+        }
+    }
 
-	builder.Configuration.AddJsonFile(path, optional: false, reloadOnChange: true);
+    builder.Configuration.AddJsonFile(path, optional: false, reloadOnChange: true);
 }
 
 builder.Services.AddControllers().AddJsonOptions(opts =>
 {
-	JsonStringEnumConverter enumConverter = new();
-	opts.JsonSerializerOptions.Converters.Add(enumConverter);
+    JsonStringEnumConverter enumConverter = new();
+    opts.JsonSerializerOptions.Converters.Add(enumConverter);
 });
 
 
@@ -64,69 +66,73 @@ string system = builder.Configuration.GetSection("BuffaloSettings:AvailableSyste
 builder.Services.AddBuffalo(x =>
 {
 
-	switch (system)
-	{
-		case "GCS":
-			x.UseCloudStorage(z =>
-			{
-				z.JsonCredentialsFile = json;
-				z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
-			});
-			break;
+    switch (system)
+    {
+        case "GCS":
+            x.UseCloudStorage(z =>
+            {
+                z.JsonCredentialsFile = json;
+                z.StorageBucket = builder.Configuration.GetValue<string>("BuffaloSettings:GoogleCloudStorageBucket");
+            });
+            break;
 
-		case "S3":
-			x.UseAmazonS3(y =>
-			{
-				y.AccessKey = amazonOptions.AccessKey;
-				y.SecretKey = amazonOptions.SecretKey;
-				y.BucketName = amazonOptions.BucketName;
-				y.FolderName = amazonOptions.FolderName;
-				y.RegionEndpoint = amazonOptions.RegionEndpoint;
-			});
-			break;
-		default:
-			throw new ArgumentException("No storage system has been configured.");
-	}
+        case "S3":
+            x.UseAmazonS3(y =>
+            {
+                y.AccessKey = amazonOptions.AccessKey;
+                y.SecretKey = amazonOptions.SecretKey;
+                y.BucketName = amazonOptions.BucketName;
+                y.FolderName = amazonOptions.FolderName;
+                y.RegionEndpoint = amazonOptions.RegionEndpoint;
+            });
+            break;
+        default:
+            throw new ArgumentException("No storage system has been configured.");
+    }
 });
 
 if (passportOptions.RequireAuthentication)
 {
 
-	builder.Services.AddAuthentication("Bearer")
-				.AddJwtBearer("Bearer", options =>
-				{
-					options.Authority = passportOptions.Authority;
+    builder.Services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = passportOptions.Authority;
 
-					options.Audience = passportOptions.Audience;
+                    options.Audience = passportOptions.Audience;
 
-					options.TokenValidationParameters = new TokenValidationParameters
-					{
-						ValidateAudience = true,
-						NameClaimType = "sub",
-						RoleClaimType = "role",
-					};
-				});
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateAudience = true,
+                        NameClaimType = "sub",
+                        RoleClaimType = "role",
+                    };
+                });
 }
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-	options.SwaggerDoc("v1", new OpenApiInfo
-	{
-		Version = "v1",
-		Title = "Buffalo API",
-		Description = "Buffalo allows Upload your Favorite Files via this Awesome Library for Objects",
-		Contact = new OpenApiContact
-		{
-			Name = "Source",
-			Url = new Uri("https://github.com/TTiVentures/Buffalo")
-		},
-		License = new OpenApiLicense
-		{
-			Name = "License",
-			Url = new Uri("https://github.com/TTiVentures/Buffalo/blob/main/LICENSE")
-		}
-	});
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Buffalo API",
+        Description = "Buffalo allows Upload your Favorite Files via this Awesome Library for Objects",
+        Contact = new OpenApiContact
+        {
+            Name = "Source",
+            Url = new Uri("https://github.com/TTiVentures/Buffalo")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "License",
+            Url = new Uri("https://github.com/TTiVentures/Buffalo/blob/main/LICENSE")
+        }
+    });
+
+    string xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+
 });
 
 WebApplication app = builder.Build();
@@ -134,11 +140,9 @@ WebApplication app = builder.Build();
 // Configure the HTTP request pipeline.
 if ((app.Configuration.GetValue<bool?>("BuffaloSettings:UseSwagger") ?? false) == true)
 {
-	app.UseSwagger();
-	app.UseSwaggerUI();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

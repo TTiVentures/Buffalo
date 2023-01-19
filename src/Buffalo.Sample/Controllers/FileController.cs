@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using TTI.Buffalo;
+using TTI.Buffalo.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Buffalo.Sample.Controllers
 {
-	[Route("api/[controller]")]
+    [Route("api/[controller]")]
 	[ApiController]
 	//[AllowAnonymous]
 	public class FileController : ControllerBase
@@ -20,8 +21,11 @@ namespace Buffalo.Sample.Controllers
 
 		}
 
-		// GET api/<FileController>/5
-		[HttpGet("{id}")]
+        // GET api/<FileController>/5
+        /// <summary>
+        /// Retrieve a file
+        /// </summary>
+        [HttpGet("{id}")]
 		public async Task<IActionResult> GetFile(Guid id)
 		{
 
@@ -49,8 +53,11 @@ namespace Buffalo.Sample.Controllers
 			}
 		}
 
-		// POST api/<FileController>
-		[HttpPost, DisableRequestSizeLimit]
+        // POST api/<FileController>
+        /// <summary>
+        /// Upload a new file
+        /// </summary>
+        [HttpPost, DisableRequestSizeLimit]
 		public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromForm, Required] AccessLevels accessLevel = AccessLevels.PRIVATE)
 		{
 			try
@@ -77,8 +84,11 @@ namespace Buffalo.Sample.Controllers
 		}
 
 
-		// DELETE api/<FileController>/5
-		[HttpDelete("{id}")]
+        // DELETE api/<FileController>/5
+        /// <summary>
+        /// Deletes a specific File.
+        /// </summary>
+        [HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteAsync(Guid id)
 		{
 
@@ -106,5 +116,37 @@ namespace Buffalo.Sample.Controllers
 			}
 
 		}
-	}
+
+        // DELETE api/<FileController>/5
+        /// <summary>
+        /// Returns a list of saved file IDs
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<ObjectList>> RetrieveFileListAsync()
+        {
+
+            try
+            {
+                return await _fileManager.RetrieveFileListAsync();
+
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ApplicationException)
+            {
+                return Problem("Application Error");
+            }
+
+        }
+    }
 }

@@ -5,15 +5,16 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using TTI.Buffalo.Models;
 
 namespace TTI.Buffalo.AmazonS3
 {
-	public class AmazonS3 : IStorage
+    public class AmazonS3 : IStorage
 	{
 		private readonly AmazonS3Client s3Client;
 
-		private readonly string FolderName;
-		private readonly string BucketName;
+		private readonly string _folderName;
+		private readonly string _bucketName;
 
 		public AmazonS3(IOptions<S3Options> options)
 		{
@@ -22,8 +23,8 @@ namespace TTI.Buffalo.AmazonS3
 			{
 				RegionEndpoint = RegionEndpoint.GetBySystemName(options.Value.RegionEndpoint)
 			};
-			FolderName = options.Value.FolderName ?? "default";
-			BucketName = options.Value.BucketName ?? "default";
+			_folderName = options.Value.FolderName ?? "default";
+			_bucketName = options.Value.BucketName ?? "default";
 
 			s3Client = new AmazonS3Client(s3Credential, s3Config);
 		}
@@ -32,9 +33,9 @@ namespace TTI.Buffalo.AmazonS3
 		{
 			try
 			{
-				string? bucketName = !string.IsNullOrWhiteSpace(FolderName)
-					? BucketName + @"/" + FolderName
-					: BucketName;
+				string? bucketName = !string.IsNullOrWhiteSpace(_folderName)
+					? _bucketName + @"/" + _folderName
+					: _bucketName;
 
 				string? publicUri = $"https://{bucketName}.s3.amazonaws.com/{fileNameForStorage}";
 
@@ -70,7 +71,7 @@ namespace TTI.Buffalo.AmazonS3
 			try
 			{
 
-				GetObjectResponse? obj = await s3Client.GetObjectAsync(BucketName, id.ToString());
+				GetObjectResponse? obj = await s3Client.GetObjectAsync(_bucketName, id.ToString());
 
 				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
 				{
@@ -80,7 +81,7 @@ namespace TTI.Buffalo.AmazonS3
 				TransferUtility? fileTransferUtility = new(s3Client);
 				_ = await fileTransferUtility.S3Client.DeleteObjectAsync(new DeleteObjectRequest()
 				{
-					BucketName = BucketName,
+					BucketName = _bucketName,
 					Key = id.ToString()
 				});
 			}
@@ -106,7 +107,7 @@ namespace TTI.Buffalo.AmazonS3
 		{
 			try
 			{
-				GetObjectResponse? obj = await s3Client.GetObjectAsync(BucketName, id.ToString());
+				GetObjectResponse? obj = await s3Client.GetObjectAsync(_bucketName, id.ToString());
 
 				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
 				{
@@ -117,7 +118,7 @@ namespace TTI.Buffalo.AmazonS3
 
 				GetObjectResponse? objectResponse = await fileTransferUtility.S3Client.GetObjectAsync(new GetObjectRequest()
 				{
-					BucketName = BucketName,
+					BucketName = _bucketName,
 					Key = id.ToString()
 				});
 
@@ -142,5 +143,32 @@ namespace TTI.Buffalo.AmazonS3
 				}
 			}
 		}
-	}
+
+        public async Task<ObjectList> RetrieveFileListAsync()
+		{
+
+			var request = new ListObjectsV2Request
+			{
+				BucketName = _bucketName,
+
+			};
+            ListObjectsV2Response? result = await s3Client.ListObjectsV2Async(request);
+
+			var response = new ObjectList();
+
+
+			if (result != null) {
+
+                foreach (var item in result.S3Objects)
+                {
+					response.Objects.Add(item.Key);
+                }
+				response.Total = result.KeyCount;
+            }
+
+            return response;
+        }
+
+
+    }
 }

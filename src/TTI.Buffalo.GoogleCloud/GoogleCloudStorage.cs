@@ -5,19 +5,21 @@ using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using TTI.Buffalo.Models;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace TTI.Buffalo.GoogleCloud
 {
-	public class GoogleCloudStorage : IStorage, IDisposable
+    public class GoogleCloudStorage : IStorage, IDisposable
 	{
-		private readonly StorageClient storageClient;
-		private readonly string bucketName;
+		private readonly StorageClient _storageClient;
+		private readonly string _bucketName;
 
 		public GoogleCloudStorage(IOptions<GCSOptions> options)
 		{
 			GoogleCredential? googleCredential = GoogleCredential.FromJson(options.Value.JsonCredentialsFile);
-			storageClient = StorageClient.Create(googleCredential);
-			bucketName = options.Value.StorageBucket ?? "default";
+			_storageClient = StorageClient.Create(googleCredential);
+			_bucketName = options.Value.StorageBucket ?? "default";
 		}
 
 		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessLevels accessLevel, string? user)
@@ -27,7 +29,7 @@ namespace TTI.Buffalo.GoogleCloud
 
 			Google.Apis.Storage.v1.Data.Object? obj = new()
 			{
-				Bucket = bucketName,
+				Bucket = _bucketName,
 				Name = fileNameForStorage,
 				ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
 				Metadata = new Dictionary<string, string>
@@ -39,7 +41,7 @@ namespace TTI.Buffalo.GoogleCloud
 			};
 
 			Google.Apis.Storage.v1.Data.Object dataObject =
-				await storageClient.UploadObjectAsync(obj, memoryStream, new UploadObjectOptions
+				await _storageClient.UploadObjectAsync(obj, memoryStream, new UploadObjectOptions
 				{
 					PredefinedAcl = accessLevel == AccessLevels.PUBLIC ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
 				});
@@ -51,14 +53,14 @@ namespace TTI.Buffalo.GoogleCloud
 		{
 			try
 			{
-				Google.Apis.Storage.v1.Data.Object? obj = storageClient.GetObject(bucketName, id.ToString());
+				Google.Apis.Storage.v1.Data.Object? obj = _storageClient.GetObject(_bucketName, id.ToString());
 
 				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
 				{
 					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
 				}
 
-				await storageClient.DeleteObjectAsync(bucketName, id.ToString());
+				await _storageClient.DeleteObjectAsync(_bucketName, id.ToString());
 
 			}
 			catch (GoogleApiException ex)
@@ -84,7 +86,7 @@ namespace TTI.Buffalo.GoogleCloud
 		{
 			try
 			{
-				Google.Apis.Storage.v1.Data.Object? obj = await storageClient.GetObjectAsync(bucketName, id.ToString());
+				Google.Apis.Storage.v1.Data.Object? obj = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
 
 				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
 				{
@@ -99,7 +101,7 @@ namespace TTI.Buffalo.GoogleCloud
 				);
 
 				// Download source object from bucket to local file system
-				_ = await storageClient.DownloadObjectAsync(bucketName, id.ToString(), memoryStream, null, default, progress);
+				_ = await _storageClient.DownloadObjectAsync(_bucketName, id.ToString(), memoryStream, null, default, progress);
 
 				memoryStream.Position = 0;
 
@@ -122,5 +124,24 @@ namespace TTI.Buffalo.GoogleCloud
 				throw new UnauthorizedAccessException("Provided Cloud Storage credentials do not have access to this resource.");
 			}
 		}
-	}
+        public async Task<ObjectList> RetrieveFileListAsync()
+        {
+
+
+			var result = _storageClient.ListObjectsAsync(_bucketName);
+			int total = 0;
+
+			var response = new ObjectList();
+
+            await foreach (var blob in result)
+            {
+				response.Objects.Add(blob.Name);
+				++total;
+            }
+			response.Total = total;
+
+			return response;
+
+        }
+    }
 }

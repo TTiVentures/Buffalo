@@ -6,7 +6,8 @@ namespace Buffalo.Sample.Controllers
 	[Route("/")]
 	[AllowAnonymous]
 	[ApiController]
-	public class StatusController : ControllerBase
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public class StatusController : ControllerBase
 	{
 		[HttpGet]
 		public IActionResult Status()

@@ -1,20 +1,21 @@
 ﻿using Microsoft.AspNetCore.Http;
+using TTI.Buffalo.Models;
 
 namespace TTI.Buffalo
 {
-	public class FileManager
+    public class FileManager
 	{
-		private readonly IStorage _cloudStorage;
+		private readonly IStorage _storage;
 
-		public FileManager(IStorage cloudStorage)
+		public FileManager(IStorage storage)
 		{
-			_cloudStorage = cloudStorage;
+			_storage = storage;
 
 		}
 
 		public async Task<FileData> GetFile(Guid id, string? user)
 		{
-			return await _cloudStorage.RetrieveFileAsync(id, user);
+			return await _storage.RetrieveFileAsync(id, user);
 		}
 
 		public async Task<FileDto> UploadFile(IFormFile file, string? user, AccessLevels accessLevel = AccessLevels.PRIVATE)
@@ -31,7 +32,7 @@ namespace TTI.Buffalo
 			{
 				Guid fileId = Guid.NewGuid();
 
-				string imageUrl = await _cloudStorage.UploadFileAsync(file, fileId.ToString(), accessLevel, user);
+				string imageUrl = await _storage.UploadFileAsync(file, fileId.ToString(), accessLevel, user);
 
 				string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName) ?? "application/octet-stream";
 
@@ -56,8 +57,13 @@ namespace TTI.Buffalo
 
 		public async Task<bool> DeleteFile(Guid id, string? user)
 		{
-			await _cloudStorage.DeleteFileAsync(id, user);
+			await _storage.DeleteFileAsync(id, user);
 			return true;
 		}
-	}
+
+        public async Task<ObjectList> RetrieveFileListAsync()
+        {
+            return await _storage.RetrieveFileListAsync();
+        }
+    }
 }
