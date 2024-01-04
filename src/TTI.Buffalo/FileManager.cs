@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using System.Text.Json;
 using TTI.Buffalo.Models;
 
 namespace TTI.Buffalo
@@ -6,33 +8,61 @@ namespace TTI.Buffalo
     public class FileManager
 	{
 		private readonly IStorage _storage;
+        private readonly ILogger<IStorage> _logger;
 
-		public FileManager(IStorage storage)
+        public FileManager(IStorage storage, ILogger<IStorage> logger)
 		{
 			_storage = storage;
+			_logger = logger;
 
 		}
 
-		public async Task<FileData> GetFile(Guid id, string? user)
+		public async Task<FileData> GetFile(Guid id, ClaimsPrincipal? user)
 		{
 			return await _storage.RetrieveFileAsync(id, user);
 		}
 
-		public async Task<FileDto> UploadFile(IFormFile file, string? user, AccessLevels accessLevel = AccessLevels.PRIVATE)
+		public async Task<FileDto> UploadFile(IFormFile file, ClaimsPrincipal? user, string? requiredClaims,  AccessLevels accessLevel = AccessLevels.USER_OWNED)
 		{
-
-			Console.WriteLine($"New picture request -> {file.FileName}");
-
-			if (accessLevel == AccessLevels.PROTECTED && string.IsNullOrEmpty(user))
+			string? userId = null;
+			RequiredClaims? reqClaims = null;
+			if (user != null && user.Identity != null)
 			{
-				throw new ArgumentException("PROTECTED level access requires a non empty user");
+                userId = user.Identity.Name;
+            }
+
+			_logger.LogDebug($"New file upload request: {file.FileName}");
+
+			if (accessLevel != AccessLevels.PUBLIC && user == null)
+			{
+				throw new ArgumentException("USER_OWNED, ORGANIZATION_OWNED and CLAIMS level access requires a non empty user");
 			}
 
-			if (file.Length > 0)
+			if (accessLevel == AccessLevels.CLAIMS)
+			{
+				if (!string.IsNullOrEmpty(requiredClaims)){
+
+                    reqClaims = JsonSerializer.Deserialize<RequiredClaims>(requiredClaims);
+
+					if (reqClaims == null)
+					{
+                        throw new ArgumentException("Failed to deserialize RequiredClaims");
+
+                    }
+                }
+				else
+				{
+                    throw new ArgumentException("CLAIMS level access requires a non empty claims policy");
+
+                }
+
+            }
+
+            if (file.Length > 0)
 			{
 				Guid fileId = Guid.NewGuid();
 
-				string imageUrl = await _storage.UploadFileAsync(file, fileId.ToString(), accessLevel, user);
+				string imageUrl = await _storage.UploadFileAsync(file, fileId.ToString(), accessLevel, user, reqClaims);
 
 				string mime = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName) ?? "application/octet-stream";
 
@@ -40,10 +70,11 @@ namespace TTI.Buffalo
 				{
 					ContentType = mime,
 					AccessType = accessLevel,
+					RequiredClaims = reqClaims,
 					CreatedOn = DateTime.UtcNow,
 					FileId = fileId,
 					FileName = file.FileName,
-					UploadedBy = user,
+					UploadedBy = userId,
 					ResourceUri = imageUrl
 
 				};
@@ -55,7 +86,7 @@ namespace TTI.Buffalo
 
 		}
 
-		public async Task<bool> DeleteFile(Guid id, string? user)
+		public async Task<bool> DeleteFile(Guid id, ClaimsPrincipal? user)
 		{
 			await _storage.DeleteFileAsync(id, user);
 			return true;

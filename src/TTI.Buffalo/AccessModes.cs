@@ -2,6 +2,7 @@
 public enum AccessLevels
 {
 	PUBLIC = 0,
-	PRIVATE = 1,
-	PROTECTED = 2
+	USER_OWNED = 1,
+	ORGANIZATION_OWNED = 2,
+	CLAIMS = 3,
 }

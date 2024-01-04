@@ -5,6 +5,9 @@ using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.Json;
 using TTI.Buffalo.Models;
 using static System.Reflection.Metadata.BlobBuilder;
 
@@ -22,26 +25,49 @@ namespace TTI.Buffalo.GoogleCloud
 			_bucketName = options.Value.StorageBucket ?? "default";
 		}
 
-		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessLevels accessLevel, string? user)
+		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, 
+			AccessLevels accessLevel, ClaimsPrincipal? user, RequiredClaims? requiredClaims)
 		{
-			using MemoryStream memoryStream = new();
-			await file.CopyToAsync(memoryStream);
 
-			Google.Apis.Storage.v1.Data.Object? obj = new()
+            string? userId = null;
+            if (user != null && user.Identity != null)
+            {
+                userId = user.Identity.Name;
+            }
+
+            var al = MD5.Create();
+            using var cs = new CryptoStream(file.OpenReadStream(), al, CryptoStreamMode.Read);
+
+			Dictionary<string, string> meta = new ()
+					{
+						{ MetadataConst.BUFFALO_ACCESS_MODE, accessLevel.ToString() },
+						{ MetadataConst.BUFFALO_USER_ID, userId ?? "" },
+						{ MetadataConst.BUFFALO_FILENAME, file.FileName }
+					};
+
+			if (accessLevel == AccessLevels.CLAIMS)
+			{
+				if (requiredClaims != null)
+				{
+                    meta.Add(MetadataConst.BUFFALO_REQUIRED_CLAIMS, JsonSerializer.Serialize(requiredClaims));
+                }
+				else
+				{
+					throw new ArgumentException("RequiredClaims must not be empty in CLAIMS level access");
+				}
+				
+			}
+
+            Google.Apis.Storage.v1.Data.Object? obj = new()
 			{
 				Bucket = _bucketName,
 				Name = fileNameForStorage,
 				ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
-				Metadata = new Dictionary<string, string>
-					{
-						{ "buffalo_accessmode", accessLevel.ToString() },
-						{ "buffalo_user", user ?? "" },
-						{ "buffalo_filename", file.FileName }
-					}
+				Metadata = meta
 			};
 
 			Google.Apis.Storage.v1.Data.Object dataObject =
-				await _storageClient.UploadObjectAsync(obj, memoryStream, new UploadObjectOptions
+				await _storageClient.UploadObjectAsync(obj, cs, new UploadObjectOptions
 				{
 					PredefinedAcl = accessLevel == AccessLevels.PUBLIC ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
 				});
@@ -49,13 +75,14 @@ namespace TTI.Buffalo.GoogleCloud
 			return "https://storage.cloud.google.com/" + dataObject.Bucket + "/" + dataObject.Name;
 		}
 
-		public async Task DeleteFileAsync(Guid id, string? user)
+		public async Task DeleteFileAsync(Guid id, ClaimsPrincipal? user)
 		{
 			try
 			{
 				Google.Apis.Storage.v1.Data.Object? obj = _storageClient.GetObject(_bucketName, id.ToString());
 
-				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+				if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID], 
+					obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
 				{
 					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
 				}
@@ -82,13 +109,14 @@ namespace TTI.Buffalo.GoogleCloud
 			GC.SuppressFinalize(this);
 		}
 
-		public async Task<FileData> RetrieveFileAsync(Guid id, string? user)
+		public async Task<FileData> RetrieveFileAsync(Guid id, ClaimsPrincipal? user)
 		{
 			try
 			{
 				Google.Apis.Storage.v1.Data.Object? obj = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
 
-				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+				if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID], 
+					obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
 				{
 					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
 				}
@@ -105,7 +133,7 @@ namespace TTI.Buffalo.GoogleCloud
 
 				memoryStream.Position = 0;
 
-				return new FileData(memoryStream, obj.Metadata["buffalo_filename"], obj.ContentType);
+				return new FileData(memoryStream, obj.Metadata[MetadataConst.BUFFALO_FILENAME], obj.ContentType);
 
 			}
 			catch (GoogleApiException ex)

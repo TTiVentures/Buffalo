@@ -1,10 +1,15 @@
 ﻿using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.Internal;
+using Amazon.Runtime.Internal.Util;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.Json;
 using TTI.Buffalo.Models;
 
 namespace TTI.Buffalo.AmazonS3
@@ -29,9 +34,18 @@ namespace TTI.Buffalo.AmazonS3
 			s3Client = new AmazonS3Client(s3Credential, s3Config);
 		}
 
-		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, AccessLevels accessLevel, string? user)
+		public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage, 
+			AccessLevels accessLevel, ClaimsPrincipal? user, RequiredClaims? requiredClaims)
 		{
-			try
+
+
+            string? userId = null;
+            if (user != null && user.Identity != null)
+            {
+                userId = user.Identity.Name;
+            }
+
+            try
 			{
 				string? bucketName = !string.IsNullOrWhiteSpace(_folderName)
 					? _bucketName + @"/" + _folderName
@@ -39,21 +53,51 @@ namespace TTI.Buffalo.AmazonS3
 
 				string? publicUri = $"https://{bucketName}.s3.amazonaws.com/{fileNameForStorage}";
 
-				TransferUtilityUploadRequest? uploadRequest = new()
+                /*
+
+                var al = MD5.Create();
+                using var cs = new CryptoStream(file.OpenReadStream(), al, CryptoStreamMode.Read);
+			
+
+				using MemoryStream memStream = new MemoryStream();
+                
+                    cs.CopyTo(memStream);
+                    memStream.Seek(0, SeekOrigin.Begin);
+				*/
+
+                TransferUtilityUploadRequest? uploadRequest = new()
 				{
 					InputStream = file.OpenReadStream(),
+                    //InputStream = memStream,
 					Key = fileNameForStorage,
 					ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
 					BucketName = bucketName,
 					CannedACL = accessLevel == AccessLevels.PUBLIC ? S3CannedACL.PublicRead : S3CannedACL.Private
 				};
 
-				uploadRequest.Metadata.Add("buffalo_user", user);
-				uploadRequest.Metadata.Add("buffalo_accessmode", accessLevel.ToString());
-				uploadRequest.Metadata.Add("buffalo_filename", file.FileName);
+				uploadRequest.Metadata.Add(MetadataConst.BUFFALO_USER_ID, userId);
+				uploadRequest.Metadata.Add(MetadataConst.BUFFALO_ACCESS_MODE, accessLevel.ToString());
+                uploadRequest.Metadata.Add(MetadataConst.BUFFALO_FILENAME, file.FileName);
+
+
+                if (accessLevel == AccessLevels.CLAIMS)
+                {
+                    if (requiredClaims != null)
+                    {
+                        uploadRequest.Metadata.Add(MetadataConst.BUFFALO_REQUIRED_CLAIMS, JsonSerializer.Serialize(requiredClaims));
+                    }
+                    else
+                    {
+                        throw new ArgumentException("RequiredClaims must not be empty in CLAIMS level access");
+                    }
+
+                }
+
 
 				TransferUtility? fileTransferUtility = new(s3Client);
 				await fileTransferUtility.UploadAsync(uploadRequest);
+
+				//var hash = BitConverter.ToString(al.Hash!);
 
 				return publicUri;
 			}
@@ -66,14 +110,15 @@ namespace TTI.Buffalo.AmazonS3
 			}
 		}
 
-		public async Task DeleteFileAsync(Guid id, string? user)
+		public async Task DeleteFileAsync(Guid id, ClaimsPrincipal? user)
 		{
 			try
 			{
 
 				GetObjectResponse? obj = await s3Client.GetObjectAsync(_bucketName, id.ToString());
 
-				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+				if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID], 
+					obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
 				{
 					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
 				}
@@ -103,13 +148,14 @@ namespace TTI.Buffalo.AmazonS3
 			}
 		}
 
-		public async Task<FileData> RetrieveFileAsync(Guid id, string? user)
+		public async Task<FileData> RetrieveFileAsync(Guid id, ClaimsPrincipal? user)
 		{
 			try
 			{
 				GetObjectResponse? obj = await s3Client.GetObjectAsync(_bucketName, id.ToString());
 
-				if (SecurityTool.VerifyAccess(user, obj.Metadata["buffalo_user"], obj.Metadata["buffalo_accessmode"]) == false)
+				if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID], 
+					obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
 				{
 					throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
 				}
@@ -124,7 +170,7 @@ namespace TTI.Buffalo.AmazonS3
 
 				return objectResponse.ResponseStream == null
 					? throw new Exception("File not exists.")
-					: new FileData(objectResponse.ResponseStream, obj.Metadata["buffalo_filename"], obj.Headers["Content-Type"]);
+					: new FileData(objectResponse.ResponseStream, obj.Metadata[MetadataConst.BUFFALO_FILENAME], obj.Headers["Content-Type"]);
 			}
 			catch (AmazonS3Exception amazonS3Exception)
 			{

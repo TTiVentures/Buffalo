@@ -7,6 +7,7 @@
         public string? ContentType { get; set; }
         public string? UploadedBy { get; set; }
         public AccessLevels AccessType { get; set; }
+        public RequiredClaims? RequiredClaims { get; set; }
         public DateTime CreatedOn { get; set; }
         public string? ResourceUri { get; set; }
     }

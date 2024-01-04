@@ -2,6 +2,7 @@ using Buffalo.Sample;
 using Google.Cloud.Logging.Console;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
@@ -55,12 +56,12 @@ builder.Configuration.GetSection("BuffaloSettings:Passport").Bind(passportOption
 S3Options amazonOptions = new();
 builder.Configuration.GetSection("BuffaloSettings:AWSCredentials").Bind(amazonOptions);
 
-Dictionary<string, object> settings = builder.Configuration
+Dictionary<string, object>? settings = builder.Configuration
   .GetSection("BuffaloSettings:GoogleCredentialFile")
   .Get<Dictionary<string, object>>();
 string json = JsonConvert.SerializeObject(settings);
 
-string system = builder.Configuration.GetSection("BuffaloSettings:AvailableSystem").Value;
+string? system = builder.Configuration.GetSection("BuffaloSettings:AvailableSystem").Value;
 
 
 builder.Services.AddBuffalo(x =>
@@ -94,20 +95,42 @@ builder.Services.AddBuffalo(x =>
 if (passportOptions.RequireAuthentication)
 {
 
-    builder.Services.AddAuthentication("Bearer")
-                .AddJwtBearer("Bearer", options =>
-                {
-                    options.Authority = passportOptions.Authority;
+    builder.Services.AddAuthentication("token")
 
-                    options.Audience = passportOptions.Audience;
+        // JWT tokens
+        .AddJwtBearer("token", options =>
+        {
 
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateAudience = true,
-                        NameClaimType = "sub",
-                        RoleClaimType = "role",
-                    };
-                });
+            options.Authority = passportOptions.Authority;
+            options.Audience = passportOptions.Audience;
+
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = true,
+                NameClaimType = "sub",
+                RoleClaimType = "role",
+            };
+
+            options.TokenValidationParameters.ValidTypes = new[] { "at+jwt" };
+
+            // if token does not contain a dot, it is a reference token
+            options.ForwardDefaultSelector = Selector.ForwardReferenceToken("introspection");
+        })
+
+        // reference tokens
+        .AddOAuth2Introspection("introspection", options =>
+        {
+            options.Authority = passportOptions.Authority;
+
+            options.ClientId = passportOptions.ClientId;
+            options.ClientSecret = passportOptions.ClientSecret;
+
+
+            options.NameClaimType = "sub";
+            options.RoleClaimType = "role";
+
+        });
+
 }
 
 builder.Services.AddEndpointsApiExplorer();
