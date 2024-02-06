@@ -452,8 +452,10 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-src/appsettings.json
+
 src/files.db
 src/files.db-shm
 src/files.db-wal
-src/Buffalo.Sample/appsettings.json
+
+appsettings.json
+
