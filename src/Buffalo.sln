@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Buffalo.Sample", "Buffalo.Sample\Buffalo.Sample.csproj", "{25CBBDBB-6D12-4310-8515-34849C73EBDF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TTI.Buffalo.ApiRest.Service", "TTI.Buffalo.ApiRest.Service\TTI.Buffalo.ApiRest.Service.csproj", "{25CBBDBB-6D12-4310-8515-34849C73EBDF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TTI.Buffalo", "TTI.Buffalo\TTI.Buffalo.csproj", "{AE9234AF-743A-42EF-9DC0-5C2FAA64A1B3}"
 EndProject
@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Elementos de la solución",
 		..\.github\workflows\dotnet.yml = ..\.github\workflows\dotnet.yml
 		..\GitVersion.yml = ..\GitVersion.yml
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integrations", "Integrations", "{73268B5A-7E67-48ED-A53C-907D818759CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,5 +48,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2203EF6A-B3F4-4821-B053-1B070DD4223A}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{67565785-2B0A-438D-B956-4B30E91C1CF2} = {73268B5A-7E67-48ED-A53C-907D818759CF}
+		{2D22CFB7-1EB0-461C-AD2F-BED94B3EA514} = {73268B5A-7E67-48ED-A53C-907D818759CF}
 	EndGlobalSection
 EndGlobal
