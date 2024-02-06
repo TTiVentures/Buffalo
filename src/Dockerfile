@@ -7,13 +7,13 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Src/Buffalo/src/TTI.Buffalo.ApiRest.Service/TTI.Buffalo.ApiRest.Service.csproj", "Src/Buffalo/src/TTI.Buffalo.ApiRest.Service/"]
-COPY ["Src/Buffalo/src/TTI.Buffalo.AmazonS3/TTI.Buffalo.AmazonS3.csproj", "Src/Buffalo/src/TTI.Buffalo.AmazonS3/"]
-COPY ["Src/Buffalo/src/TTI.Buffalo/TTI.Buffalo.csproj", "Src/Buffalo/src/TTI.Buffalo/"]
-COPY ["Src/Buffalo/src/TTI.Buffalo.GoogleCloud/TTI.Buffalo.GoogleCloud.csproj", "Src/Buffalo/src/TTI.Buffalo.GoogleCloud/"]
-RUN dotnet restore "Src/Buffalo/src/TTI.Buffalo.ApiRest.Service/TTI.Buffalo.ApiRest.Service.csproj"
+COPY ["TTI.Buffalo.ApiRest.Service/TTI.Buffalo.ApiRest.Service.csproj", "TTI.Buffalo.ApiRest.Service/"]
+COPY ["TTI.Buffalo.AmazonS3/TTI.Buffalo.AmazonS3.csproj", "TTI.Buffalo.AmazonS3/"]
+COPY ["TTI.Buffalo/TTI.Buffalo.csproj", "TTI.Buffalo/"]
+COPY ["TTI.Buffalo.GoogleCloud/TTI.Buffalo.GoogleCloud.csproj", "TTI.Buffalo.GoogleCloud/"]
+RUN dotnet restore "TTI.Buffalo.ApiRest.Service/TTI.Buffalo.ApiRest.Service.csproj"
 COPY . .
-WORKDIR "/src/Src/Buffalo/src/TTI.Buffalo.ApiRest.Service"
+WORKDIR "/src/TTI.Buffalo.ApiRest.Service"
 RUN dotnet build "TTI.Buffalo.ApiRest.Service.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
