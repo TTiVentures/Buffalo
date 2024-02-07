@@ -170,6 +170,14 @@ if ((app.Configuration.GetValue<bool?>("BuffaloSettings:UseSwagger") ?? false) =
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+if (passportOptions.RequireAuthentication)
+{ 
+    app.MapControllers().RequireAuthorization();
+}
+else
+{
+    app.MapControllers();
+}
+
 
 app.Run();
