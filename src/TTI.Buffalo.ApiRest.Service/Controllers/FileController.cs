@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using TTI.Buffalo;
 using TTI.Buffalo.Models;
-using FileInfo = TTI.Buffalo.Models.FileInfo;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -62,8 +60,12 @@ public class FileController : ControllerBase
     {
         try
         {
-            var newFile = await _fileManager.UploadFile(file, User);
-            return Created(newFile.ResourceUri ?? "/", newFile);
+            var newFileId = await _fileManager.UploadFile(file, User);
+
+            return Ok(new
+            {
+                FileId = newFileId
+            });
         }
         catch (FileNotFoundException ex)
         {
@@ -142,14 +144,17 @@ public class FileController : ControllerBase
             return Problem("Application Error");
         }
     }
-    
+
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateFileMetadataAsync(Guid id, [FromBody] UpdateFileMetadataBody body)
     {
         try
         {
-            await _fileManager.UpdateFileMetadata(id, body, User);
-            return NoContent();
+            var mediaUrl = await _fileManager.UpdateFileMetadata(id, body, User);
+            return Ok(new
+            {
+                publicUrl = mediaUrl
+            });
         }
         catch (FileNotFoundException ex)
         {
@@ -168,5 +173,4 @@ public class FileController : ControllerBase
             return Problem("Application Error");
         }
     }
-    
 }

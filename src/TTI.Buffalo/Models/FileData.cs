@@ -24,5 +24,5 @@ public class FileInfo
 public class FileInfoDto
 {
     public required Guid Id { get; set; }
-    public required IDictionary<string, string>? Metadata { get; set; }
+    public IDictionary<string, string>? Metadata { get; set; }
 }

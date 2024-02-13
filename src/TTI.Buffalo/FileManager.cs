@@ -2,7 +2,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using TTI.Buffalo.Models;
-using FileInfo = TTI.Buffalo.Models.FileInfo;
 
 namespace TTI.Buffalo;
 
@@ -17,21 +16,47 @@ public class FileManager
         _logger = logger;
     }
 
+    private void CheckReadPermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal? user)
+    {
+        if (!HasReadPermissions(existingMetadata, user))
+        {
+            throw new UnauthorizedAccessException("User does not have read access to read metadata");
+        }
+    }
+
+    private bool HasReadPermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal? user)
+    {
+        var existingReadClaims = existingMetadata[BuffaloMetadata.ReadClaims].FromJson<SecurityClaims>();
+        var existingReadAccessMode = Enum.Parse<AccessLevels>(existingMetadata[BuffaloMetadata.ReadAccessMode]);
+        var existingUserId = Guid.Parse(existingMetadata[BuffaloMetadata.UserId]);
+
+        return VerifyAccess(user, existingUserId, existingReadAccessMode, existingReadClaims);
+    }
+
     private void CheckWritePermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal user)
     {
-        var existingWriteClaims = existingMetadata[BuffaloMetadata.WriteClaims];
+        if (!HasWritePermissions(existingMetadata, user))
+        {
+            throw new UnauthorizedAccessException("User does not have write access to read metadata");
+        }
+    }
+
+    private bool HasWritePermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal user)
+    {
+        var existingWriteClaims = existingMetadata[BuffaloMetadata.WriteClaims].FromJson<SecurityClaims>();
         var existingWriteAccessMode = Enum.Parse<AccessLevels>(existingMetadata[BuffaloMetadata.WriteAccessMode]);
         var existingUserId = Guid.Parse(existingMetadata[BuffaloMetadata.UserId]);
 
-        if (!VerifyAccess(user, existingUserId, existingWriteAccessMode, existingWriteClaims.FromJson<SecurityClaims>()))
-        {
-            throw new UnauthorizedAccessException("User does not have access to update metadata");
-        }
+        return VerifyAccess(user, existingUserId, existingWriteAccessMode, existingWriteClaims);
     }
 
     public async Task<FileData> GetFile(Guid id, ClaimsPrincipal? user)
     {
-        return await _storage.RetrieveFileAsync(id, user);
+        var file = await _storage.RetrieveFileAsync(id);
+
+        CheckReadPermissions(file.Metadata, user);
+
+        return file;
     }
 
     public async Task<Guid> UploadFile(IFormFile file, ClaimsPrincipal user)
@@ -63,12 +88,33 @@ public class FileManager
         return true;
     }
 
-    public async Task<List<FileInfo>> RetrieveFileListAsync(bool? includeMetadata, ClaimsPrincipal user)
+    public async Task<List<FileInfoDto>> RetrieveFileListAsync(bool? includeMetadata, ClaimsPrincipal user)
     {
-        return await _storage.RetrieveFileListAsync();
+        var fileList = await _storage.RetrieveFileListAsync();
+
+        var returnList = new List<FileInfoDto>();
+
+        foreach (var file in fileList)
+        {
+            if (!HasReadPermissions(file.Metadata, user))
+            {
+                continue;
+            }
+
+            var fileDto = file.ToDto();
+
+            if (includeMetadata != true)
+            {
+                fileDto.Metadata = null;
+            }
+
+            returnList.Add(fileDto);
+        }
+
+        return returnList;
     }
 
-    public async Task UpdateFileMetadata(Guid fileId,
+    public async Task<string?> UpdateFileMetadata(Guid fileId,
         UpdateFileMetadataBody body,
         ClaimsPrincipal user)
     {
@@ -84,7 +130,7 @@ public class FileManager
             return existingMetadata;
         };
 
-        await _storage.UpdateFileMetadataAsync(fileId, updateMetadata);
+        return await _storage.UpdateFileMetadataAsync(fileId, updateMetadata);
     }
 
 
@@ -93,9 +139,14 @@ public class FileManager
         return user.FindFirst("sub")?.Value ?? "";
     }
 
-    public static bool VerifyAccess(ClaimsPrincipal requestUser, Guid storedUser, AccessLevels storedAccessLevel,
+    public static bool VerifyAccess(ClaimsPrincipal? requestUser, Guid storedUser, AccessLevels storedAccessLevel,
         SecurityClaims? storedRequiredClaims = null)
     {
+        if (requestUser is null)
+        {
+            return storedAccessLevel == AccessLevels.Public;
+        }
+
         if (!Guid.TryParse(requestUser.Identity?.Name, out var userId))
         {
             throw new ArgumentException("Invalid user id");

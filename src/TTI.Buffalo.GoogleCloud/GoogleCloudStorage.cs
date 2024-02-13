@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Google;
+﻿using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Cloud.Storage.V1;
@@ -88,9 +87,8 @@ public class GoogleCloudStorage : IStorage, IDisposable
         try
         {
             var obj = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
-            
+
             checkWritePermissions(obj.Metadata);
-            
 
             await _storageClient.DeleteObjectAsync(_bucketName, id.ToString());
         }
@@ -106,18 +104,21 @@ public class GoogleCloudStorage : IStorage, IDisposable
     }
 
 
-    public async Task UpdateFileMetadataAsync(Guid fileId, Func<IDictionary<string, string>, IDictionary<string, string>> updateMetadata)
+    public async Task<string?> UpdateFileMetadataAsync(Guid fileId,
+        Func<IDictionary<string, string>, IDictionary<string, string>> updateMetadata)
     {
         var obj = await _storageClient.GetObjectAsync(_bucketName, fileId.ToString());
 
         obj.Metadata = updateMetadata(obj.Metadata);
 
+        var fileVisibility = GetPredefinedAcl(Enum.Parse<AccessLevels>(obj.Metadata[BuffaloMetadata.ReadAccessMode]));
+
         var objectFile = await _storageClient.UpdateObjectAsync(obj, new()
         {
-            PredefinedAcl = GetPredefinedAcl(Enum.Parse<AccessLevels>(obj.Metadata[BuffaloMetadata.ReadAccessMode]))
+            PredefinedAcl = fileVisibility
         });
-        
-        objectFile.
+
+        return fileVisibility == PredefinedObjectAcl.PublicRead ? objectFile.MediaLink : null;
     }
 
     public async Task<string> UploadFileAsync(IFormFile file, Guid fileId, IDictionary<string, string> metadata)

@@ -11,5 +11,5 @@ public interface IStorage
     Task<FileData> RetrieveFileAsync(Guid id);
     Task DeleteFileAsync(Guid id, Action<IDictionary<string, string>> checkWritePermissions);
     Task<List<FileInfo>> RetrieveFileListAsync();
-    Task UpdateFileMetadataAsync(Guid fileId, Func<IDictionary<string, string>, IDictionary<string, string>> updateMetadata);
+    Task<string?> UpdateFileMetadataAsync(Guid fileId, Func<IDictionary<string, string>, IDictionary<string, string>> updateMetadata);
 }
