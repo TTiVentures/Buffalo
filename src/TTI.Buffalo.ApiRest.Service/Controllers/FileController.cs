@@ -1,172 +1,172 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using TTI.Buffalo;
 using TTI.Buffalo.Models;
+using FileInfo = TTI.Buffalo.Models.FileInfo;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
-namespace Buffalo.Sample.Controllers
+namespace Buffalo.Sample.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+//[AllowAnonymous]
+public class FileController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    //[AllowAnonymous]
-    public class FileController : ControllerBase
+    private readonly FileManager _fileManager;
+
+    public FileController(FileManager fileManager)
     {
+        _fileManager = fileManager;
+    }
 
-        private readonly FileManager _fileManager;
-
-        public FileController(FileManager fileManager)
+    // GET api/<FileController>/5
+    /// <summary>
+    ///     Retrieve a file
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetFile(Guid id)
+    {
+        try
         {
-            _fileManager = fileManager;
-
+            var file = await _fileManager.GetFile(id, User);
+            var fileName = file.Metadata[BuffaloMetadata.Filename];
+            return File(file.Data, file.MimeType, fileName);
         }
-
-        // GET api/<FileController>/5
-        /// <summary>
-        /// Retrieve a file
-        /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetFile(Guid id)
+        catch (FileNotFoundException ex)
         {
-
-            try
-            {
-                FileData file = await _fileManager.GetFile(id, User);
-
-                return File(file.Data, file.MimeType, file.FileName);
-            }
-            catch (FileNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (ApplicationException)
-            {
-                return Problem("Application Error");
-            }
+            return NotFound(ex.Message);
         }
-
-        // POST api/<FileController>
-        /// <summary>
-        /// Upload a new file
-        /// </summary>
-        [HttpPost, DisableRequestSizeLimit]
-        public async Task<IActionResult> UploadFile(
-            [Required] IFormFile file,
-            [FromForm] string? requiredClaims,
-            [FromForm, Required] AccessLevels accessLevel = AccessLevels.USER_OWNED)
+        catch (UnauthorizedAccessException ex)
         {
-
-            var ee = new RequiredClaims
-            {
-                RootItem = new Or()
-                {
-                    Items = new()
-                    {
-                        new Claim("Rol", "Admin"),
-                        new Claim("sub", "nav"),
-
-                    }
-                }
-            };
-
-            Console.WriteLine(JsonSerializer.Serialize(ee));
-
-            try
-            {
-                FileDto? newFile = await _fileManager.UploadFile(file, User, requiredClaims, accessLevel);
-                return Created(newFile.ResourceUri ?? "/", newFile);
-            }
-            catch (FileNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (ApplicationException)
-            {
-                return Problem("Application Error");
-            }
+            return Unauthorized(ex.Message);
         }
-
-
-        // DELETE api/<FileController>/5
-        /// <summary>
-        /// Deletes a specific File.
-        /// </summary>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteAsync(Guid id)
+        catch (ArgumentException ex)
         {
-
-            try
-            {
-                bool deleted = await _fileManager.DeleteFile(id, User);
-                return deleted ? NoContent() : BadRequest();
-
-            }
-            catch (FileNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (ApplicationException)
-            {
-                return Problem("Application Error");
-            }
-
+            return BadRequest(ex.Message);
         }
-
-        // DELETE api/<FileController>/5
-        /// <summary>
-        /// Returns a list of saved file IDs
-        /// </summary>
-        [HttpGet]
-        public async Task<ActionResult<ObjectList>> RetrieveFileListAsync()
+        catch (ApplicationException)
         {
-
-            try
-            {
-                return await _fileManager.RetrieveFileListAsync();
-
-            }
-            catch (FileNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (ApplicationException)
-            {
-                return Problem("Application Error");
-            }
-
+            return Problem("Application Error");
         }
     }
+
+    // POST api/<FileController>
+    /// <summary>
+    ///     Upload a new file
+    /// </summary>
+    [HttpPost]
+    [DisableRequestSizeLimit]
+    public async Task<IActionResult> UploadFile([Required] IFormFile file)
+    {
+        try
+        {
+            var newFile = await _fileManager.UploadFile(file, User);
+            return Created(newFile.ResourceUri ?? "/", newFile);
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ApplicationException)
+        {
+            return Problem("Application Error");
+        }
+    }
+
+
+    // DELETE api/<FileController>/5
+    /// <summary>
+    ///     Deletes a specific File.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsync(Guid id)
+    {
+        try
+        {
+            var deleted = await _fileManager.DeleteFile(id, User);
+            return deleted ? NoContent() : BadRequest();
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ApplicationException)
+        {
+            return Problem("Application Error");
+        }
+    }
+
+    // DELETE api/<FileController>/5
+    /// <summary>
+    ///     Returns a list of saved file IDs
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> RetrieveFileListAsync([FromQuery] bool? IncludeMetadata = false)
+    {
+        try
+        {
+            return Ok(await _fileManager.RetrieveFileListAsync(IncludeMetadata, User));
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ApplicationException)
+        {
+            return Problem("Application Error");
+        }
+    }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateFileMetadataAsync(Guid id, [FromBody] UpdateFileMetadataBody body)
+    {
+        try
+        {
+            await _fileManager.UpdateFileMetadata(id, body, User);
+            return NoContent();
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ApplicationException)
+        {
+            return Problem("Application Error");
+        }
+    }
+    
 }

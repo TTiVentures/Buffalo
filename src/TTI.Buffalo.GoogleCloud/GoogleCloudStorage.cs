@@ -1,14 +1,12 @@
 ﻿using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text.Json;
 using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Responses;
-using Google.Apis.Download;
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using TTI.Buffalo.Models;
+using FileInfo = TTI.Buffalo.Models.FileInfo;
 using Object = Google.Apis.Storage.v1.Data.Object;
 
 namespace TTI.Buffalo.GoogleCloud;
@@ -30,104 +28,21 @@ public class GoogleCloudStorage : IStorage, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public async Task<string> UploadFileAsync(IFormFile file, string fileNameForStorage,
-        AccessLevels accessLevel, ClaimsPrincipal? user, RequiredClaims? requiredClaims)
-    {
-        string? userId = null;
-        if (user != null && user.Identity != null)
-        {
-            userId = user.Identity.Name;
-        }
-
-        var al = MD5.Create();
-        using var cs = new CryptoStream(file.OpenReadStream(), al, CryptoStreamMode.Read);
-
-        Dictionary<string, string> meta = new()
-        {
-            { MetadataConst.BUFFALO_ACCESS_MODE, accessLevel.ToString() },
-            { MetadataConst.BUFFALO_USER_ID, userId ?? "" },
-            { MetadataConst.BUFFALO_FILENAME, file.FileName }
-        };
-
-        if (accessLevel == AccessLevels.CLAIMS)
-        {
-            if (requiredClaims != null)
-            {
-                meta.Add(MetadataConst.BUFFALO_REQUIRED_CLAIMS, JsonSerializer.Serialize(requiredClaims));
-            }
-            else
-            {
-                throw new ArgumentException("RequiredClaims must not be empty in CLAIMS level access");
-            }
-        }
-
-        Object? obj = new()
-        {
-            Bucket = _bucketName,
-            Name = fileNameForStorage,
-            ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
-            Metadata = meta
-        };
-
-        var dataObject =
-            await _storageClient.UploadObjectAsync(obj, cs, new()
-            {
-                PredefinedAcl = accessLevel == AccessLevels.PUBLIC ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
-            });
-
-        return "https://storage.cloud.google.com/" + dataObject.Bucket + "/" + dataObject.Name;
-    }
-
-    public async Task DeleteFileAsync(Guid id, ClaimsPrincipal? user)
+    public async Task<FileData> RetrieveFileAsync(Guid id)
     {
         try
         {
-            var obj = _storageClient.GetObject(_bucketName, id.ToString());
+            MemoryStream memoryStream = new();
+            var obj = await _storageClient.DownloadObjectAsync(_bucketName, id.ToString(), memoryStream);
+            // memoryStream.Position = 0;
 
-            if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID],
-                    obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
+            return new()
             {
-                throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
-            }
-
-            await _storageClient.DeleteObjectAsync(_bucketName, id.ToString());
-        }
-        catch (GoogleApiException ex)
-        {
-            if (ex.Error.Code == 404)
-            {
-                throw new FileNotFoundException(ex.Message);
-            }
-
-            throw new ApplicationException(ex.Message);
-        }
-    }
-
-    public async Task<FileData> RetrieveFileAsync(Guid id, ClaimsPrincipal? user)
-    {
-        try
-        {
-            var obj = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
-
-            if (SecurityTool.VerifyAccess(user, obj.Metadata[MetadataConst.BUFFALO_USER_ID],
-                    obj.Metadata[MetadataConst.BUFFALO_ACCESS_MODE], obj.Metadata[MetadataConst.BUFFALO_REQUIRED_CLAIMS]) == false)
-            {
-                throw new UnauthorizedAccessException("Unauthorized access to PROTECTED resource");
-            }
-
-            MemoryStream? memoryStream = new();
-
-            // IDownloadProgress defined in Google.Apis.Download namespace
-            Progress<IDownloadProgress>? progress = new(
-                p => Console.WriteLine($"bytes: {p.BytesDownloaded}, status: {p.Status}")
-            );
-
-            // Download source object from bucket to local file system
-            _ = await _storageClient.DownloadObjectAsync(_bucketName, id.ToString(), memoryStream, null, default, progress);
-
-            memoryStream.Position = 0;
-
-            return new(memoryStream, obj.Metadata[MetadataConst.BUFFALO_FILENAME], obj.ContentType);
+                Id = Guid.Parse(obj.Name),
+                Data = memoryStream,
+                Metadata = obj.Metadata.ToDictionary(),
+                MimeType = obj.ContentType
+            };
         }
         catch (GoogleApiException ex)
         {
@@ -144,21 +59,94 @@ public class GoogleCloudStorage : IStorage, IDisposable
         }
     }
 
-    public async Task<ObjectList> RetrieveFileListAsync()
+    public async Task<List<FileInfo>> RetrieveFileListAsync()
     {
         var result = _storageClient.ListObjectsAsync(_bucketName);
-        var total = 0;
 
-        var response = new ObjectList();
+        var response = new List<FileInfo>();
 
         await foreach (var blob in result)
         {
-            response.Objects.Add(blob.Name);
-            ++total;
+            if (!Guid.TryParse(blob.Name, out var id))
+            {
+                // _logger.LogWarning("Invalid file name: {FileName}", blob.Name);
+                continue;
+            }
+
+            response.Add(new()
+            {
+                Id = id,
+                Metadata = blob.Metadata
+            });
         }
 
-        response.Total = total;
-
         return response;
+    }
+
+    public async Task DeleteFileAsync(Guid id, Action<IDictionary<string, string>> checkWritePermissions)
+    {
+        try
+        {
+            var obj = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
+            
+            checkWritePermissions(obj.Metadata);
+            
+
+            await _storageClient.DeleteObjectAsync(_bucketName, id.ToString());
+        }
+        catch (GoogleApiException ex)
+        {
+            if (ex.Error.Code == 404)
+            {
+                throw new FileNotFoundException(ex.Message);
+            }
+
+            throw new ApplicationException(ex.Message);
+        }
+    }
+
+
+    public async Task UpdateFileMetadataAsync(Guid fileId, Func<IDictionary<string, string>, IDictionary<string, string>> updateMetadata)
+    {
+        var obj = await _storageClient.GetObjectAsync(_bucketName, fileId.ToString());
+
+        obj.Metadata = updateMetadata(obj.Metadata);
+
+        var objectFile = await _storageClient.UpdateObjectAsync(obj, new()
+        {
+            PredefinedAcl = GetPredefinedAcl(Enum.Parse<AccessLevels>(obj.Metadata[BuffaloMetadata.ReadAccessMode]))
+        });
+        
+        objectFile.
+    }
+
+    public async Task<string> UploadFileAsync(IFormFile file, Guid fileId, IDictionary<string, string> metadata)
+    {
+        Object? obj = new()
+        {
+            Bucket = _bucketName,
+            Name = fileId.ToString(),
+            ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
+            Metadata = metadata
+        };
+
+        // TODO: Add file hashing to metadata for not duplicating files
+        // var al = MD5.Create();
+        // await using var cs = new CryptoStream(file.OpenReadStream(), al, CryptoStreamMode.Read);
+
+        await using var cs = file.OpenReadStream();
+        var dataObject =
+            await _storageClient.UploadObjectAsync(obj, cs, new()
+            {
+                PredefinedAcl = GetPredefinedAcl(Enum.Parse<AccessLevels>(metadata[BuffaloMetadata.ReadAccessMode]))
+            });
+
+        return "https://storage.cloud.google.com/" + dataObject.Bucket + "/" + dataObject.Name;
+    }
+
+
+    private static PredefinedObjectAcl GetPredefinedAcl(AccessLevels accessLevel)
+    {
+        return accessLevel == AccessLevels.Public ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private;
     }
 }

@@ -72,7 +72,7 @@ namespace TTI.Buffalo.AmazonS3
 					Key = fileNameForStorage,
 					ContentType = file.ContentType ?? MimeTypeTool.GetMimeType(file.FileName),
 					BucketName = bucketName,
-					CannedACL = accessLevel == AccessLevels.PUBLIC ? S3CannedACL.PublicRead : S3CannedACL.Private
+					CannedACL = accessLevel == AccessLevels.Public ? S3CannedACL.PublicRead : S3CannedACL.Private
 				};
 
 				uploadRequest.Metadata.Add(MetadataConst.BUFFALO_USER_ID, userId);
@@ -80,7 +80,7 @@ namespace TTI.Buffalo.AmazonS3
                 uploadRequest.Metadata.Add(MetadataConst.BUFFALO_FILENAME, file.FileName);
 
 
-                if (accessLevel == AccessLevels.CLAIMS)
+                if (accessLevel == AccessLevels.Claims)
                 {
                     if (requiredClaims != null)
                     {
@@ -190,7 +190,7 @@ namespace TTI.Buffalo.AmazonS3
 			}
 		}
 
-        public async Task<ObjectList> RetrieveFileListAsync()
+        public async Task<FileInfoList> RetrieveFileListAsync(bool? includeMetadata)
 		{
 
 			var request = new ListObjectsV2Request
@@ -200,7 +200,7 @@ namespace TTI.Buffalo.AmazonS3
 			};
             ListObjectsV2Response? result = await s3Client.ListObjectsV2Async(request);
 
-			var response = new ObjectList();
+			var response = new FileInfoList();
 
 
 			if (result != null) {

@@ -35,6 +35,10 @@ if (builder.Environment.IsProduction())
 
     builder.Configuration.AddJsonFile(path, false, true);
 }
+else
+{
+    builder.Logging.AddConsole();
+}
 
 builder.Services.AddControllers().AddJsonOptions(opts =>
 {
@@ -70,14 +74,14 @@ builder.Services.AddBuffalo(x =>
             break;
 
         case "S3":
-            x.UseAmazonS3(y =>
-            {
-                y.AccessKey = amazonOptions.AccessKey;
-                y.SecretKey = amazonOptions.SecretKey;
-                y.BucketName = amazonOptions.BucketName;
-                y.FolderName = amazonOptions.FolderName;
-                y.RegionEndpoint = amazonOptions.RegionEndpoint;
-            });
+            // x.UseAmazonS3(y =>
+            // {
+            //     y.AccessKey = amazonOptions.AccessKey;
+            //     y.SecretKey = amazonOptions.SecretKey;
+            //     y.BucketName = amazonOptions.BucketName;
+            //     y.FolderName = amazonOptions.FolderName;
+            //     y.RegionEndpoint = amazonOptions.RegionEndpoint;
+            // });
             break;
         default:
             throw new ArgumentException("No storage system has been configured.");
@@ -99,6 +103,9 @@ if (passportOptions.RequireAuthentication)
                 NameClaimType = "sub",
                 RoleClaimType = "role"
             };
+
+            // Add sub to ClaimsPrincipal
+            options.MapInboundClaims = false;
 
             options.TokenValidationParameters.ValidTypes = new[] { "at+jwt" };
 
