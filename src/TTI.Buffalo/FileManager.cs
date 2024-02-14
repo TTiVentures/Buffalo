@@ -26,8 +26,8 @@ public class FileManager
 
     private bool HasReadPermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal? user)
     {
-        return true;
-        var existingReadClaims = existingMetadata[BuffaloMetadata.ReadClaims].FromJson<SecurityClaims>();
+        existingMetadata.TryGetValue(BuffaloMetadata.ReadClaims, out var readClaimsJson);
+        var existingReadClaims = readClaimsJson.FromJson<SecurityClaims>();
         var existingReadAccessMode = Enum.Parse<AccessLevels>(existingMetadata[BuffaloMetadata.ReadAccessMode]);
         var existingUserId = Guid.Parse(existingMetadata[BuffaloMetadata.UserId]);
 
@@ -44,8 +44,8 @@ public class FileManager
 
     private bool HasWritePermissions(IDictionary<string, string> existingMetadata, ClaimsPrincipal user)
     {
-        return true;
-        var existingWriteClaims = existingMetadata[BuffaloMetadata.WriteClaims].FromJson<SecurityClaims>();
+        existingMetadata.TryGetValue(BuffaloMetadata.WriteClaims, out var writeClaimsJson);
+        var existingWriteClaims = writeClaimsJson.FromJson<SecurityClaims>();
         var existingWriteAccessMode = Enum.Parse<AccessLevels>(existingMetadata[BuffaloMetadata.WriteAccessMode]);
         var existingUserId = Guid.Parse(existingMetadata[BuffaloMetadata.UserId]);
 
@@ -126,7 +126,7 @@ public class FileManager
 
             existingMetadata[BuffaloMetadata.ReadAccessMode] = body.ReadAccessLevel.ToString();
             existingMetadata[BuffaloMetadata.WriteAccessMode] = body.WriteAccessLevel.ToString();
-            
+
             var readClaims = body.ReadSecurityClaims.ToJson();
             if (readClaims is null)
             {
@@ -146,7 +146,7 @@ public class FileManager
             {
                 existingMetadata[BuffaloMetadata.WriteClaims] = writeClaims;
             }
-            
+
             existingMetadata[BuffaloMetadata.UserId] = GetUserClaimsId(user);
             return existingMetadata;
         };
@@ -201,8 +201,14 @@ public static class ObjectExtensions
         return JsonSerializer.Serialize(obj);
     }
 
-    public static T FromJson<T>(this string json)
+    public static T? FromJson<T>(this string? json)
+        where T : class
     {
-        return JsonSerializer.Deserialize<T>(json) ?? throw new ApplicationException("Failed to deserialize json");
+        if (string.IsNullOrEmpty(json) || json == "null")
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<T>(json);
     }
 }
