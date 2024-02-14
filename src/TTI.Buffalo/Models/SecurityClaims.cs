@@ -5,7 +5,7 @@ namespace TTI.Buffalo.Models;
 
 public class SecurityClaims
 {
-    public SecurityItem? RootItem { get; set; }
+    public required SecurityItem RootItem { get; set; }
 
     public bool CheckIdentity(ClaimsIdentity claimsIdentity)
     {
@@ -14,7 +14,7 @@ public class SecurityClaims
 
     public bool CheckClaims(IEnumerable<Claim> claims)
     {
-        return RootItem is not null && CheckClaims(RootItem, claims);
+        return CheckClaims(RootItem, claims);
     }
 
     private bool CheckClaims(SecurityItem item, IEnumerable<Claim> claims)
@@ -37,14 +37,17 @@ public abstract class SecurityItem { }
 
 public class ClaimItem : SecurityItem
 {
+    [JsonConstructor]
+    public ClaimItem() { }
+
     public ClaimItem(string key, string value)
     {
         Key = key;
         Value = value;
     }
 
-    public string Key { get; set; }
-    public string Value { get; set; }
+    public required string Key { get; set; }
+    public required string Value { get; set; }
 }
 
 public class And : SecurityItem
