@@ -13,10 +13,12 @@ namespace TTI.Buffalo.GoogleCloud;
 public class GoogleCloudStorage : IStorage, IDisposable
 {
     private readonly string _bucketName;
+    private readonly ILogger<GoogleCloudStorage> _logger;
     private readonly StorageClient _storageClient;
 
-    public GoogleCloudStorage(IOptions<GCSOptions> options)
+    public GoogleCloudStorage(IOptions<GCSOptions> options, ILogger<GoogleCloudStorage> logger)
     {
+        _logger = logger;
         var googleCredential = GoogleCredential.FromJson(options.Value.JsonCredentialsFile);
         _storageClient = StorageClient.Create(googleCredential);
         _bucketName = options.Value.StorageBucket ?? "default";
@@ -68,7 +70,7 @@ public class GoogleCloudStorage : IStorage, IDisposable
         {
             if (!Guid.TryParse(blob.Name, out var id))
             {
-                // _logger.LogWarning("Invalid file name: {FileName}", blob.Name);
+                _logger.LogWarning("Invalid file name: {FileName}", blob.Name);
                 continue;
             }
 

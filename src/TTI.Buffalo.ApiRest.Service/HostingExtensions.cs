@@ -45,11 +45,13 @@ public static class HostingExtensions
             builder.Logging.AddConsole();
         }
 
-        builder.Services.AddControllers().AddJsonOptions(opts =>
-        {
-            JsonStringEnumConverter enumConverter = new();
-            opts.JsonSerializerOptions.Converters.Add(enumConverter);
-        });
+        builder.Services.AddControllers()
+            .AddApplicationPart(typeof(ICloudBuffaloEntrypoint).Assembly)
+            .AddJsonOptions(opts =>
+            {
+                JsonStringEnumConverter enumConverter = new();
+                opts.JsonSerializerOptions.Converters.Add(enumConverter);
+            });
 
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
