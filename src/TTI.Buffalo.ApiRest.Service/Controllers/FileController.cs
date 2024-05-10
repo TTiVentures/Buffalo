@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using TTI.Buffalo;
 using TTI.Buffalo.Models;
 
@@ -29,8 +30,29 @@ public class FileController : ControllerBase
         try
         {
             var file = await _fileManager.GetFile(id, User);
-            var fileName = file.Metadata[BuffaloMetadata.Filename];
-            
+            file.Metadata.TryGetValue(BuffaloMetadata.Filename, out var fileName);
+
+            if (fileName is null)
+            {
+                try
+                {
+
+                    if (file.MimeType.Contains("/"))
+                    {
+                        var fileExtension = file.MimeType.Split('/')[1];
+                        fileName = id + "." + fileExtension;
+                    }
+                    else
+                    {
+                        fileName = id.ToString();
+                    }
+                }
+                catch
+                {
+                    fileName = id.ToString();
+                }
+            }
+
             file.Data.Position = 0; // This is needed to reset the stream position to the beginning
             return File(file.Data, file.MimeType, fileName);
         }
