@@ -35,14 +35,15 @@ public class GoogleCloudStorage : IStorage, IDisposable
         {
             MemoryStream memoryStream = new();
             var obj = await _storageClient.DownloadObjectAsync(_bucketName, id.ToString(), memoryStream);
+            var objWithMetadata = await _storageClient.GetObjectAsync(_bucketName, id.ToString());
             // memoryStream.Position = 0;
 
             return new()
             {
                 Id = Guid.Parse(obj.Name),
                 Data = memoryStream,
-                Metadata = obj.Metadata.ToDictionary(),
-                MimeType = obj.ContentType
+                Metadata = objWithMetadata.Metadata.ToDictionary(),
+                MimeType = objWithMetadata.ContentType
             };
         }
         catch (GoogleApiException ex)
