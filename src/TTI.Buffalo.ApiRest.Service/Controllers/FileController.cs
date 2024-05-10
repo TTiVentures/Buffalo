@@ -30,6 +30,8 @@ public class FileController : ControllerBase
         {
             var file = await _fileManager.GetFile(id, User);
             var fileName = file.Metadata[BuffaloMetadata.Filename];
+            
+            file.Data.Position = 0; // This is needed to reset the stream position to the beginning
             return File(file.Data, file.MimeType, fileName);
         }
         catch (FileNotFoundException ex)
